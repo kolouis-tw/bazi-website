@@ -1,0 +1,13 @@
+README.md
+SMOKE_TEST.md
+agent_notes.md
+changelog/v1_initial.md
+changelog/v2_luck_sync_fix.md
+changelog/v3_final_engineering_package.md
+docs/regression_cases.md
+docs_algorithm.md
+docs_overview.md
+examples/sample_chart.json
+examples/sample_prompt_output.md
+index.html
+manifest.json

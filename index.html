@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>四柱八字十神排盤系統｜穩定完整版</title>
+<style>
+:root{
+  --wood:#347e53;
+  --fire:#be4e2d;
+  --earth:#a67631;
+  --metal:#6f777e;
+  --water:#35689c;
+  --bg:#f5efe6;
+  --card:#ffffffd9;
+  --ink:#292725;
+  --muted:#766e65;
+  --line:rgba(43,41,38,.14);
+  --accent:#8b5f35;
+  --accentDark:#6b4322;
+  --shadow:0 22px 60px rgba(75,55,32,.12);
+  --radius:28px;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at 10% 5%,rgba(166,118,49,.18),transparent 30%),
+    linear-gradient(135deg,#f7f1e8,#eee6dc 55%,#faf8f3);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  line-height:1.65;
+}
+.shell{max-width:1280px;margin:0 auto;padding:34px 20px 70px}
+.panel{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(14px);
+}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;margin-bottom:22px}
+.intro,.calculator,.card{padding:28px}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:900;margin-bottom:10px}
+h1{font-size:clamp(34px,5vw,56px);line-height:1.05;margin:0 0 14px;letter-spacing:-.04em}
+h2{font-size:28px;margin:0 0 16px;letter-spacing:-.02em}
+h3{font-size:17px;margin:18px 0 9px}
+p,.desc,.note{color:var(--muted)}
+.lead{font-size:17px;line-height:1.8;margin:0}
+.badges,.nav-actions,.button-row,.tag-list,.hidden-stems{display:flex;gap:10px;flex-wrap:wrap}
+.badges,.nav-actions{margin-top:22px}
+.badge,.tag,.hidden-chip{
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:rgba(255,255,255,.68);
+  padding:7px 11px;
+  font-size:13px;
+  font-weight:850;
+}
+.nav-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:760px}
+button{
+  border:none;
+  border-radius:18px;
+  padding:14px 18px;
+  font-size:16px;
+  font-weight:900;
+  cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accentDark));
+  color:white;
+  box-shadow:0 14px 32px rgba(108,67,34,.18);
+}
+.secondary,.nav-btn{
+  color:var(--accentDark);
+  background:rgba(255,255,255,.8);
+  border:1px solid rgba(139,95,53,.24);
+  box-shadow:0 10px 26px rgba(64,45,25,.08);
+}
+.nav-btn{width:100%;min-height:54px}
+button:hover{transform:translateY(-1px)}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.full{grid-column:1/-1}
+label{display:block;color:var(--muted);font-size:13px;font-weight:900;margin-bottom:7px}
+input,select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:rgba(255,255,255,.78);
+  padding:13px 14px;
+  font-size:16px;
+  outline:none;
+}
+input:focus,select:focus{border-color:rgba(139,95,53,.55);box-shadow:0 0 0 4px rgba(139,95,53,.12)}
+.note{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:18px;
+  background:rgba(166,118,49,.09);
+  border:1px solid rgba(166,118,49,.16);
+  color:#72501f;
+  font-size:14px;
+}
+.page{display:none}
+.page.active{display:block}
+
+.results{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}
+.pillar{
+  padding:22px;
+  min-height:270px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+  border-width:1.5px;
+}
+.pillar-title{font-size:15px;font-weight:900;color:var(--muted);letter-spacing:.08em;margin-bottom:10px}
+.pillar-stack{display:flex;flex-direction:column;align-items:center;gap:8px;margin:8px 0 12px}
+.gz-char{display:inline-block;font-weight:950;line-height:.95}
+.pillar-stack .gz-char{font-size:76px}
+.sub{font-weight:900;color:var(--accentDark)}
+.pill{display:inline-block;margin-top:8px;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.78);border:1px solid rgba(43,41,38,.12);font-size:13px;font-weight:900}
+
+.wood{border-color:rgba(52,126,83,.36)!important;background:linear-gradient(135deg,rgba(52,126,83,.14),rgba(255,255,255,.86))!important}
+.fire{border-color:rgba(190,78,45,.36)!important;background:linear-gradient(135deg,rgba(190,78,45,.14),rgba(255,255,255,.86))!important}
+.earth{border-color:rgba(166,118,49,.38)!important;background:linear-gradient(135deg,rgba(166,118,49,.16),rgba(255,255,255,.86))!important}
+.metal{border-color:rgba(111,119,126,.38)!important;background:linear-gradient(135deg,rgba(111,119,126,.16),rgba(255,255,255,.86))!important}
+.water{border-color:rgba(53,104,156,.38)!important;background:linear-gradient(135deg,rgba(53,104,156,.15),rgba(255,255,255,.86))!important}
+
+.gz-wood{color:var(--wood)!important}
+.gz-fire{color:var(--fire)!important}
+.gz-earth{color:var(--earth)!important}
+.gz-metal{color:var(--metal)!important}
+.gz-water{color:var(--water)!important}
+
+.details,.grid-2,.advanced-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-bottom:22px}
+.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.table{width:100%;border-collapse:collapse;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:rgba(255,255,255,.5)}
+.table th,.table td{border-bottom:1px solid var(--line);padding:12px 13px;text-align:left;vertical-align:top;font-size:14px}
+.table th{width:30%;background:rgba(139,95,53,.06);color:var(--accentDark)}
+.table tr:last-child th,.table tr:last-child td{border-bottom:none}
+
+.summary-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0 24px}
+.summary-item{text-align:center;border:1px solid var(--line);border-radius:18px;padding:14px;font-weight:900}
+.summary-item span{display:block;font-size:28px;margin-top:3px}
+
+.ten-god-pillar-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:24px}
+.ten-god-card{padding:20px;border-radius:var(--radius);border:1px solid var(--line);background:rgba(255,255,255,.72);box-shadow:var(--shadow)}
+.ten-title{text-align:center;color:var(--muted);font-weight:950;letter-spacing:.08em;margin-bottom:12px}
+.ten-part{border:1px solid rgba(43,41,38,.11);border-radius:20px;background:rgba(255,255,255,.62);padding:14px;margin-bottom:12px}
+.ten-char{text-align:center;font-size:58px;margin-bottom:8px}
+.ten-badge{display:table;margin:0 auto 8px;border:1px solid rgba(43,41,38,.1);background:rgba(255,255,255,.82);border-radius:999px;padding:5px 10px;font-size:13px;font-weight:900}
+.ten-role{font-size:13px;color:var(--accentDark);font-weight:900;margin-bottom:6px}
+.ten-desc{font-size:13px;color:var(--muted);line-height:1.6}
+
+.hidden-stems{gap:8px}
+.hidden-chip .gz-char{font-size:1.05em;margin-right:2px}
+.branch-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.branch-card{border:1.5px solid var(--line);border-radius:24px;padding:18px;min-height:168px}
+.branch-title{display:flex;align-items:end;gap:12px;margin-bottom:10px}
+.branch-title .gz-char{font-size:72px}
+.branch-title span{color:var(--muted);font-weight:900}
+.branch-main{font-weight:900;color:var(--accentDark);margin-bottom:10px}
+
+.transit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
+.transit-card,.luck-card{
+  border:1.5px solid var(--line);
+  background:rgba(255,255,255,.72);
+  border-radius:22px;
+  padding:16px;
+  min-height:150px;
+  position:relative;
+}
+.transit-card b,.luck-card b{display:block;font-size:26px;margin-bottom:8px}
+.year-label{font-size:14px;font-weight:900;color:var(--muted);margin-bottom:6px}
+.luck-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:14px}
+.current-luck{border-color:rgba(139,95,53,.6)!important;background:linear-gradient(135deg,rgba(139,95,53,.22),rgba(255,255,255,.88))!important}
+.current-luck::after{content:"目前大運";position:absolute;top:10px;right:10px;background:var(--accent);color:white;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900}
+
+.strength-row{display:grid;grid-template-columns:72px 1fr 52px;gap:12px;align-items:center;margin:12px 0}
+.bar{height:12px;border-radius:999px;background:rgba(43,41,38,.09);overflow:hidden}
+.bar span{display:block;height:100%;border-radius:999px;background:var(--accent)}
+
+.luck-transit-grid{
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  margin-top:16px;
+}
+.luck-transit-grid .luck-card{
+  min-height:158px;
+}
+.luck-card .year-label{
+  font-size:14px;
+  font-weight:900;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.luck-card b{
+  display:block;
+  font-size:26px;
+  margin-bottom:8px;
+  line-height:1.1;
+}
+.luck-card .luck-line{
+  margin-top:4px;
+  font-size:14px;
+  line-height:1.55;
+}
+@media(max-width:1000px){
+  .luck-transit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .luck-transit-grid{grid-template-columns:1fr}
+}
+@media print{
+  @page{
+    size:A4 portrait;
+    margin:8mm;
+  }
+
+  body{
+    background:white!important;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+    font-size:10pt;
+  }
+
+  .shell{
+    max-width:none;
+    padding:0;
+  }
+
+  button,
+  .nav-actions,
+  .button-row,
+  .footer{
+    display:none!important;
+  }
+
+  .panel,
+  .card,
+  .pillar,
+  .ten-god-card,
+  .branch-card,
+  .transit-card,
+  .luck-card{
+    box-shadow:none!important;
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
+
+  .hero{
+    grid-template-columns:1fr!important;
+    gap:6px;
+    margin-bottom:8px;
+  }
+
+  .intro,
+  .calculator,
+  .card{
+    padding:12px!important;
+  }
+
+  h1{
+    font-size:24px!important;
+    margin-bottom:6px;
+  }
+
+  h2{
+    font-size:16px!important;
+    margin-bottom:8px;
+  }
+
+  h3{
+    font-size:13px!important;
+    margin:8px 0 4px;
+  }
+
+  p,
+  .lead,
+  .desc,
+  .note,
+  td,
+  th{
+    font-size:9pt!important;
+    line-height:1.4!important;
+  }
+
+  .note{
+    margin-top:6px!important;
+    padding:8px 10px!important;
+  }
+
+  .results{
+    grid-template-columns:repeat(4,1fr)!important;
+    gap:6px!important;
+    margin-bottom:8px!important;
+  }
+
+  .pillar{
+    min-height:auto!important;
+    padding:10px!important;
+    border-radius:16px!important;
+  }
+
+  .pillar-title{
+    font-size:11px!important;
+    margin-bottom:4px!important;
+  }
+
+  .pillar-stack{
+    gap:2px!important;
+    margin:4px 0!important;
+  }
+
+  .pillar-stack .gz-char{
+    font-size:42px!important;
+  }
+
+  .sub{
+    font-size:10px!important;
+  }
+
+  .pill,
+  .badge,
+  .tag,
+  .hidden-chip,
+  .ten-badge{
+    font-size:8pt!important;
+    padding:3px 7px!important;
+  }
+
+  .details,
+  .grid-2,
+  .advanced-grid{
+    grid-template-columns:repeat(2,1fr)!important;
+    gap:6px!important;
+    margin-bottom:8px!important;
+  }
+
+  .summary-strip{
+    grid-template-columns:repeat(5,1fr)!important;
+    gap:6px!important;
+    margin:8px 0 10px!important;
+  }
+
+  .summary-item{
+    padding:8px!important;
+    border-radius:12px!important;
+  }
+
+  .summary-item span{
+    font-size:18px!important;
+  }
+
+  .ten-god-pillar-grid{
+    grid-template-columns:repeat(4,1fr)!important;
+    gap:6px!important;
+    margin-bottom:8px!important;
+  }
+
+  .ten-god-card{
+    padding:10px!important;
+    border-radius:16px!important;
+  }
+
+  .ten-char{
+    font-size:34px!important;
+    margin-bottom:2px!important;
+  }
+
+  .ten-part{
+    padding:8px!important;
+    margin-bottom:6px!important;
+    border-radius:14px!important;
+  }
+
+  .ten-desc{
+    font-size:8pt!important;
+    line-height:1.35!important;
+  }
+
+  .branch-grid,
+  .transit-grid,
+  .luck-transit-grid{
+    grid-template-columns:repeat(2,1fr)!important;
+    gap:6px!important;
+  }
+
+  .branch-card,
+  .transit-card,
+  .luck-card{
+    min-height:auto!important;
+    padding:10px!important;
+    border-radius:16px!important;
+  }
+
+  .branch-title .gz-char{
+    font-size:38px!important;
+  }
+
+  .transit-card b,
+  .luck-card b{
+    font-size:18px!important;
+    margin-bottom:4px!important;
+  }
+
+  .table th,
+  .table td{
+    padding:6px 8px!important;
+    font-size:8.5pt!important;
+  }
+
+  .strength-row{
+    margin:6px 0!important;
+  }
+
+  .page{
+    display:block!important;
+  }
+}
+
+
+
+.six-pillar-grid{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:12px;
+  margin-top:14px;
+}
+.six-pillar-card{
+  border:1.5px solid var(--line);
+  background:rgba(255,255,255,.74);
+  border-radius:22px;
+  padding:14px;
+  text-align:center;
+  min-height:190px;
+}
+.six-pillar-card .title{
+  color:var(--muted);
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.06em;
+  margin-bottom:8px;
+}
+.six-pillar-card .vertical{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  margin:8px 0;
+}
+.six-pillar-card .vertical .gz-char{
+  font-size:48px;
+}
+.energy-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px;
+  margin-top:14px;
+}
+.energy-card{
+  border:1.5px solid var(--line);
+  background:rgba(255,255,255,.7);
+  border-radius:18px;
+  padding:14px;
+  text-align:center;
+}
+.energy-card b{
+  display:block;
+  font-size:24px;
+  margin-bottom:4px;
+}
+.relation-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px;
+  margin-top:14px;
+}
+.relation-summary-card{
+  border:1.5px solid var(--line);
+  background:rgba(255,255,255,.7);
+  border-radius:18px;
+  padding:14px;
+  text-align:center;
+}
+.relation-summary-card b{
+  display:block;
+  font-size:22px;
+  margin-bottom:4px;
+}
+.favorable-tag{
+  display:inline-block;
+  border-radius:999px;
+  padding:6px 11px;
+  font-size:13px;
+  font-weight:900;
+  margin:4px;
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(43,41,38,.12);
+}
+@media(max-width:1100px){
+  .six-pillar-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .energy-grid,.relation-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .six-pillar-grid,.energy-grid,.relation-summary-grid{grid-template-columns:1fr}
+}
+@media print{
+  .six-pillar-grid{grid-template-columns:repeat(6,1fr)!important;gap:6px!important}
+  .six-pillar-card{padding:8px!important;min-height:auto!important}
+  .six-pillar-card .vertical .gz-char{font-size:30px!important}
+  .energy-grid,.relation-summary-grid{grid-template-columns:repeat(5,1fr)!important;gap:6px!important}
+}
+
+.combo-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+  margin-top:14px;
+}
+.combo-card{
+  border:1.5px solid var(--line);
+  background:rgba(255,255,255,.72);
+  border-radius:22px;
+  padding:18px;
+  min-height:170px;
+}
+.combo-card b{
+  display:block;
+  font-size:24px;
+  margin-bottom:8px;
+}
+.combo-type{
+  display:inline-block;
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:13px;
+  font-weight:900;
+  background:rgba(255,255,255,.78);
+  border:1px solid rgba(43,41,38,.12);
+  margin-bottom:8px;
+}
+.combo-status{
+  margin-top:10px;
+  font-size:14px;
+  font-weight:900;
+}
+.combo-missing{
+  color:var(--muted);
+  font-size:13px;
+  margin-top:6px;
+}
+@media(max-width:1000px){
+  .combo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .combo-grid{grid-template-columns:1fr}
+}
+@media print{
+  .combo-grid{grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
+  .combo-card{padding:10px!important;min-height:auto!important}
+  .combo-card b{font-size:18px!important}
+}
+
+.footer{text-align:center;color:var(--muted);font-size:13px;margin-top:28px}
+
+@media(max-width:1000px){
+  .hero,.details,.grid-2,.advanced-grid{grid-template-columns:1fr}
+  .results,.ten-god-pillar-grid,.luck-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .transit-grid,.branch-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .shell{padding:18px 12px 50px}
+  .intro,.calculator,.card{padding:20px}
+  .form-grid,.results,.summary-strip,.grid-4,.ten-god-pillar-grid,.branch-grid,.transit-grid,.luck-grid{grid-template-columns:1fr}
+  .nav-actions{grid-template-columns:1fr}
+  .pillar-stack .gz-char{font-size:62px}
+}
+@media print{
+  @page{
+    size:A4 portrait;
+    margin:8mm;
+  }
+
+  body{
+    background:white!important;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+    font-size:10pt;
+  }
+
+  .shell{
+    max-width:none;
+    padding:0;
+  }
+
+  button,
+  .nav-actions,
+  .button-row,
+  .footer{
+    display:none!important;
+  }
+
+  .panel,
+  .card,
+  .pillar,
+  .ten-god-card,
+  .branch-card,
+  .transit-card,
+  .luck-card{
+    box-shadow:none!important;
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
+
+  .hero{
+    grid-template-columns:1fr!important;
+    gap:6px;
+    margin-bottom:8px;
+  }
+
+  .intro,
+  .calculator,
+  .card{
+    padding:12px!important;
+  }
+
+  h1{
+    font-size:24px!important;
+    margin-bottom:6px;
+  }
+
+  h2{
+    font-size:16px!important;
+    margin-bottom:8px;
+  }
+
+  h3{
+    font-size:13px!important;
+    margin:8px 0 4px;
+  }
+
+  p,
+  .lead,
+  .desc,
+  .note,
+  td,
+  th{
+    font-size:9pt!important;
+    line-height:1.4!important;
+  }
+
+  .note{
+    margin-top:6px!important;
+    padding:8px 10px!important;
+  }
+
+  .results{
+    grid-template-columns:repeat(4,1fr)!important;
+    gap:6px!important;
+    margin-bottom:8px!important;
+  }
+
+  .pillar{
+    min-height:auto!important;
+    padding:10px!important;
+    border-radius:16px!important;
+  }
+
+  .pillar-title{
+    font-size:11px!important;
+    margin-bottom:4px!important;
+  }
+
+  .pillar-stack{
+    gap:2px!important;
+    margin:4px 0!important;
+  }
+
+  .pillar-stack .gz-char{
+    font-size:42px!important;
+  }
+
+  .sub{
+    font-size:10px!important;
+  }
+
+  .pill,
+  .badge,
+  .tag,
+  .hidden-chip,
+  .ten-badge{
+    font-size:8pt!important;
+    padding:3px 7px!important;
+  }
+
+  .details,
+  .grid-2,
+  .advanced-grid{
+    grid-template-columns:repeat(2,1fr)!important;
+    gap:6px!important;
+    margin-bottom:8px!important;
+  }
+
+  .summary-strip{
+    grid-template-columns:repeat(5,1fr)!important;
+    gap:6px!important;
+    margin:8px 0 10px!important;
+  }
+
+  .summary-item{
+    padding:8px!important;
+    border-radius:12px!important;
+  }
+
+  .summary-item span{
+    font-size:18px!important;
+  }
+
+  .ten-god-pillar-grid{
+    grid-template-columns:repeat(4,1fr)!important;
+    gap:6px!important;
+    margin-bottom:8px!important;
+  }
+
+  .ten-god-card{
+    padding:10px!important;
+    border-radius:16px!important;
+  }
+
+  .ten-char{
+    font-size:34px!important;
+    margin-bottom:2px!important;
+  }
+
+  .ten-part{
+    padding:8px!important;
+    margin-bottom:6px!important;
+    border-radius:14px!important;
+  }
+
+  .ten-desc{
+    font-size:8pt!important;
+    line-height:1.35!important;
+  }
+
+  .branch-grid,
+  .transit-grid,
+  .luck-transit-grid{
+    grid-template-columns:repeat(2,1fr)!important;
+    gap:6px!important;
+  }
+
+  .branch-card,
+  .transit-card,
+  .luck-card{
+    min-height:auto!important;
+    padding:10px!important;
+    border-radius:16px!important;
+  }
+
+  .branch-title .gz-char{
+    font-size:38px!important;
+  }
+
+  .transit-card b,
+  .luck-card b{
+    font-size:18px!important;
+    margin-bottom:4px!important;
+  }
+
+  .table th,
+  .table td{
+    padding:6px 8px!important;
+    font-size:8.5pt!important;
+  }
+
+  .strength-row{
+    margin:6px 0!important;
+  }
+
+  .page{
+    display:block!important;
+  }
+}
+</style>
+</head>
+
+<body>
+<main class="shell">
+  <section class="hero">
+    <div class="panel intro">
+      <div class="eyebrow">Stable Bazi Engine</div>
+      <h1>四柱排盤系統</h1>
+      <p class="lead">本系統版權歸於-威科國際股份有限公司-如無版權擁有者授權請勿買賣、贈與、盜用。</p>
+      <div class="badges">
+        <span class="badge">四柱</span>
+        <span class="badge">十神</span>
+        <span class="badge">藏干</span>
+        <span class="badge">旺衰</span>
+        <span class="badge">大運流年</span>
+      </div>
+      <div class="nav-actions">
+        <button class="nav-btn" onclick="showPage('mainPage')">四柱排盤</button>
+        <button class="nav-btn" onclick="calculate();showPage('analysisPage')">查看十神分析</button>
+        <button class="nav-btn" onclick="calculate();showPage('combinationPage')">會合局分析</button>
+        <button class="nav-btn" onclick="downloadPromptMarkdown()">下載AI分析.md</button>
+        <button class="nav-btn" onclick="window.print()">列印 / PDF</button>
+      </div>
+      <div class="note">五行固定色：木綠、火紅、土棕、金灰、水藍。年、月、日、時由左至右，天干在上、地支在下。</div>
+      <div class="note">列印已最佳化為 A4 PDF 版面，建議瀏覽器列印時縮放保持「100%」並關閉頁首頁尾。</div>
+    </div>
+
+    <div class="panel calculator">
+      <div class="form-grid">
+        <div><label>西元年</label><input id="year" type="number" value="2024"></div>
+        <div><label>月份</label><input id="month" type="number" value="3" min="1" max="12"></div>
+        <div><label>日期</label><input id="day" type="number" value="10" min="1" max="31"></div>
+        <div><label>小時</label><input id="hour" type="number" value="0" min="0" max="23"></div>
+        <div><label>分鐘</label><input id="minute" type="number" value="20" min="0" max="59"></div>
+        <div>
+          <label>子時換日</label>
+          <select id="ziRule">
+            <option value="late" selected>晚子時 23:00 後換日</option>
+            <option value="none">不使用晚子時換日</option>
+          </select>
+        </div>
+      </div>
+      <div class="button-row" style="margin-top:16px">
+        <button onclick="calculate()">開始排盤</button>
+        <button class="secondary" onclick="useCurrentTime()">一鍵現在時間</button>
+      </div>
+      <div class="note">節氣目前採近似日期；若出生在節氣交接當日，需查精確交節時刻。</div>
+    </div>
+  </section>
+
+  <section id="mainPage" class="page active">
+    <div class="results">
+      <div id="yearCard" class="panel pillar"></div>
+      <div id="monthCard" class="panel pillar"></div>
+      <div id="dayCard" class="panel pillar"></div>
+      <div id="hourCard" class="panel pillar"></div>
+    </div>
+
+    <div class="details">
+      <div class="panel card">
+        <h2>計算明細</h2>
+        <table class="table">
+          <tr><th>輸入時間</th><td id="inputDetail">—</td></tr>
+          <tr><th>JDN</th><td id="jdnDetail">—</td></tr>
+          <tr><th>日柱序號</th><td id="dayIndexDetail">—</td></tr>
+          <tr><th>年柱判定</th><td id="yearDetail">—</td></tr>
+          <tr><th>月柱判定</th><td id="monthDetail">—</td></tr>
+          <tr><th>時柱判定</th><td id="hourDetail">—</td></tr>
+        </table>
+      </div>
+      <div class="panel card">
+        <h2>校驗基準</h2>
+        <p>日柱基準：1984/02/02 = 丙寅日，JDN 2445732.5，六十甲子序號 2。</p>
+        <p>校驗案例：2024/03/10 00:20 → 甲辰年、丁卯月、癸酉日、壬子時。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="analysisPage" class="page">
+    <div class="panel card" style="margin-bottom:22px">
+      <h2>八字十神關係分析</h2>
+      <p>以日主為核心，判斷天干、地支本氣、藏干相對於日主的十神關係。</p>
+      <div class="summary-strip">
+        <div class="summary-item wood">同我<span id="sameCount">0</span></div>
+        <div class="summary-item fire">我生<span id="outputCount">0</span></div>
+        <div class="summary-item earth">我剋<span id="wealthCount">0</span></div>
+        <div class="summary-item metal">剋我<span id="officerCount">0</span></div>
+        <div class="summary-item water">生我<span id="resourceCount">0</span></div>
+      </div>
+      <div id="dayMasterNote" class="note">日主：—</div>
+      <button class="secondary" onclick="showPage('mainPage')" style="margin-top:16px">返回四柱排盤</button>
+    </div>
+
+    <div id="tenGodCards" class="ten-god-pillar-grid"></div>
+
+    <div class="grid-2">
+      <div class="panel card">
+        <h2>地支藏干十神</h2>
+        <p>依四個地支列出藏干，並以日主標記每個藏干的十神。</p>
+        <table id="hiddenStemTable" class="table"></table>
+      </div>
+      <div class="panel card">
+        <h2>節令月令</h2>
+        <table class="table">
+          <tr><th>目前月令</th><td id="seasonMonthDetail">—</td></tr>
+          <tr><th>月令五行</th><td id="seasonElementDetail">—</td></tr>
+          <tr><th>日主狀態</th><td id="dayStrengthDetail">—</td></tr>
+        </table>
+        <div id="seasonExplain" class="note">—</div>
+      </div>
+    </div>
+
+    <div class="panel card">
+      <h2>地支本氣與藏干總覽</h2>
+      <p>依目前四柱展開年支、月支、日支、時支的本氣、藏干與藏干十神。</p>
+      <div id="branchDetailGrid" class="branch-grid"></div>
+      <div class="note">本氣用於表層十神判斷；藏干用於觀察內部力量、透干、通根與格局判斷。</div>
+    </div>
+
+    <div class="grid-2" style="margin-top:22px">
+      <div class="panel card">
+        <h2>五行旺衰概覽</h2>
+        <div id="strengthBars"></div>
+      </div>
+      <div class="panel card">
+        <h2>合沖刑害</h2>
+        <div id="relationTags" class="tag-list"></div>
+        <div class="note">只列關係，不直接斷吉凶。</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel card">
+        <h2>透干分析</h2>
+        <table id="visibleStemTable" class="table"></table>
+      </div>
+      <div class="panel card">
+        <h2>通根分析</h2>
+        <table id="rootTable" class="table"></table>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel card">
+        <h2>格局初判</h2>
+        <table class="table">
+          <tr><th>月令主氣</th><td id="patternMainQi">—</td></tr>
+          <tr><th>月令十神</th><td id="patternTenGod">—</td></tr>
+          <tr><th>初判格局</th><td id="patternName">—</td></tr>
+        </table>
+        <div id="patternNote" class="note">—</div>
+      </div>
+      <div class="panel card">
+        <h2>用神喜忌初判</h2>
+        <table class="table">
+          <tr><th>日主旺衰</th><td id="usefulStrength">—</td></tr>
+          <tr><th>喜用方向</th><td id="usefulGods">—</td></tr>
+          <tr><th>忌神方向</th><td id="avoidGods">—</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel card">
+        <h2>流年查詢</h2>
+        <div class="form-grid">
+          <div><label>起始流年</label><input id="transitYear" type="number" value="2026"></div>
+          <div><label>&nbsp;</label><button class="secondary" onclick="updateAnalysis()">更新流年</button></div>
+        </div>
+        <div id="transitYearGrid" class="transit-grid"></div>
+      </div>
+
+      <div class="panel card">
+        <h2>大運試算</h2>
+        <div class="form-grid">
+          <div><label>性別</label><select id="gender"><option value="male">男</option><option value="female">女</option></select></div>
+          <div><label>手動起運年齡（備用）</label><input id="startAge" type="number" value="6"></div>
+          <div class="full"><label>起運模式</label><select id="luckMode"><option value="auto">自動估算起運（依節氣差）</option><option value="manual">手動輸入起運年齡</option></select></div>
+        </div>
+        <button onclick="updateLuckOnly()" style="margin-top:16px">執行大運試算</button>
+        <div id="luckCycles" class="transit-grid luck-transit-grid"></div>
+        <div id="luckNote" class="note">—</div>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="combinationPage" class="page">
+    <div class="panel card" style="margin-bottom:22px">
+      <h2>會合局分析</h2>
+      <p>此頁分析原局四個地支，以及流年加入後形成的三會局、三合局與半合局。此區先作「結構判定」，不直接斷吉凶。</p>
+      <div class="note">判斷順序建議：三會局 ＞ 三合局 ＞ 半合局 ＞ 六合。若遇沖破、月令不助、不得勢，需再進一步判斷是否能成局或只是有象。</div>
+      <button class="secondary" onclick="showPage('analysisPage')" style="margin-top:16px">返回十神分析</button>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel card">
+        <h2>原局四支</h2>
+        <div id="baseBranchesBox" class="tag-list"></div>
+        <div class="note">原局指年支、月支、日支、時支，不含大運與流年。</div>
+      </div>
+      <div class="panel card">
+        <h2>加入流年</h2>
+        <div class="form-grid">
+          <div>
+            <label>流年年份</label>
+            <input id="comboTransitYear" type="number" value="2026">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="secondary" onclick="updateCombinationPage()" style="margin-top:0">更新會合局</button>
+          </div>
+        </div>
+        <div id="transitBranchBox" class="note">—</div>
+      </div>
+    </div>
+
+
+    <div class="panel card">
+      <h2>六柱十二字整合分析</h2>
+      <p>此區將原局四柱、指定流年當下對應的大運，以及指定流年合併成六組干支，共十二個字。當流年年份改變時，大運也會自動切換到該年份主要對應的大運。</p>
+      <div id="sixPillarGrid" class="six-pillar-grid"></div>
+      <div id="sixPillarNote" class="note">—</div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel card">
+        <h2>十二字五行統計</h2>
+        <div id="twelveElementGrid" class="energy-grid"></div>
+        <div class="note">統計方式：天干五行 + 地支本氣五行，共十二個字。未含藏干權重。</div>
+      </div>
+      <div class="panel card">
+        <h2>對日主的生剋同耗</h2>
+        <div id="dayMasterRelationGrid" class="relation-summary-grid"></div>
+        <div class="note">以日主為中心：同我、我生、我剋、剋我、生我，觀察整體結構偏向。</div>
+      </div>
+    </div>
+
+    <div class="panel card">
+      <h2>六柱喜忌初判</h2>
+      <div id="favorableBox" class="tag-list"></div>
+      <div id="favorableExplain" class="note">—</div>
+    </div>
+
+    <div class="panel card">
+      <h2>六支合會沖刑害總覽</h2>
+      <div id="sixBranchRelationTags" class="tag-list"></div>
+      <div class="note">此處把年支、月支、日支、時支、大運支、流年支放在一起檢查。若同時存在合與沖，需要再看月令、喜忌與是否得勢。</div>
+    </div>
+
+    <div class="panel card">
+      <h2>三會局</h2>
+      <p>三會局代表季節方會，力量通常高於三合，與月令、旺衰、用神判斷關聯很大。</p>
+      <div id="meetingGrid" class="combo-grid"></div>
+    </div>
+
+    <div class="panel card">
+      <h2>三合局</h2>
+      <p>三合局為地支三方成局，需檢查是否三字齊全、是否得月令支持，以及是否受到沖破。</p>
+      <div id="trineGrid" class="combo-grid"></div>
+    </div>
+
+    <div class="panel card">
+      <h2>半合局</h2>
+      <p>半合局是三合局缺一字的狀態，可視為有成局傾向，但力量小於完整三合。</p>
+      <div id="halfComboGrid" class="combo-grid"></div>
+    </div>
+  </section>
+
+
+  <div class="footer">四柱排盤系統｜穩定完整版</div>
+</main>
+
+<script>
+const stems=["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
+const branches=["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+const ganzhi60=Array.from({length:60},(_,i)=>stems[i%10]+branches[i%12]);
+const stemInfo={
+ "甲":{element:"木",polarity:"陽"},"乙":{element:"木",polarity:"陰"},
+ "丙":{element:"火",polarity:"陽"},"丁":{element:"火",polarity:"陰"},
+ "戊":{element:"土",polarity:"陽"},"己":{element:"土",polarity:"陰"},
+ "庚":{element:"金",polarity:"陽"},"辛":{element:"金",polarity:"陰"},
+ "壬":{element:"水",polarity:"陽"},"癸":{element:"水",polarity:"陰"}
+};
+const branchMainStem={"子":"癸","丑":"己","寅":"甲","卯":"乙","辰":"戊","巳":"丙","午":"丁","未":"己","申":"庚","酉":"辛","戌":"戊","亥":"壬"};
+const branchElement={"寅":"木","卯":"木","巳":"火","午":"火","辰":"土","戌":"土","丑":"土","未":"土","申":"金","酉":"金","亥":"水","子":"水"};
+const elementClass={"木":"wood","火":"fire","土":"earth","金":"metal","水":"water"};
+const gzClass={"木":"gz-wood","火":"gz-fire","土":"gz-earth","金":"gz-metal","水":"gz-water"};
+const elementCycle=["木","火","土","金","水"];
+const hiddenStemsMap={
+ "子":[["癸","主氣"]],"丑":[["己","主氣"],["癸","中氣"],["辛","餘氣"]],
+ "寅":[["甲","主氣"],["丙","中氣"],["戊","餘氣"]],"卯":[["乙","主氣"]],
+ "辰":[["戊","主氣"],["乙","中氣"],["癸","餘氣"]],"巳":[["丙","主氣"],["戊","中氣"],["庚","餘氣"]],
+ "午":[["丁","主氣"],["己","中氣"]],"未":[["己","主氣"],["丁","中氣"],["乙","餘氣"]],
+ "申":[["庚","主氣"],["壬","中氣"],["戊","餘氣"]],"酉":[["辛","主氣"]],
+ "戌":[["戊","主氣"],["辛","中氣"],["丁","餘氣"]],"亥":[["壬","主氣"],["甲","中氣"]]
+};
+const termC20={"小寒":6.11,"立春":4.6295,"驚蟄":6.3826,"清明":5.59,"立夏":6.318,"芒種":6.5,"小暑":7.928,"立秋":8.35,"白露":8.44,"寒露":9.098,"立冬":8.218,"大雪":7.9};
+const termC21={"小寒":5.4055,"立春":3.87,"驚蟄":5.63,"清明":4.81,"立夏":5.52,"芒種":5.678,"小暑":7.108,"立秋":7.5,"白露":7.646,"寒露":8.318,"立冬":7.438,"大雪":7.18};
+const termMonth={"小寒":1,"立春":2,"驚蟄":3,"清明":4,"立夏":5,"芒種":6,"小暑":7,"立秋":8,"白露":9,"寒露":10,"立冬":11,"大雪":12};
+const tenGodText={
+ "比肩":"與日主同類同氣，象徵自我、同輩、主觀意志與競爭意識。",
+ "劫財":"與日主同類但陰陽不同，象徵朋友、外部助力、分奪與行動力。",
+ "食神":"日主自然生出之氣，象徵才華、穩定輸出、享受與溫和表達。",
+ "傷官":"日主向外突破之氣，象徵創意、反骨、表達慾與挑戰規則。",
+ "正財":"日主所掌控且陰陽相合之資源，象徵穩定收入、經營與現實感。",
+ "偏財":"日主所掌控但較流動之資源，象徵機會、人脈、外財與彈性。",
+ "正官":"約束日主且陰陽相合之力，象徵責任、制度、名聲與規範。",
+ "七殺":"直接壓迫日主之力，象徵壓力、挑戰、魄力、風險與突破。",
+ "正印":"滋養日主且陰陽相合之力，象徵學習、保護、貴人與正統支持。",
+ "偏印":"滋養日主但較特殊之力，象徵靈感、直覺、特殊知識與非典型資源。"
+};
+const seasonStrengthMap={
+ "寅":{木:5,火:3,土:2,金:1,水:2,label:"春初木旺，火漸生，金弱。"},
+ "卯":{木:5,火:3,土:2,金:1,水:2,label:"仲春木最旺，火得生，金受制。"},
+ "辰":{木:3,火:2,土:4,金:2,水:2,label:"辰為濕土，木餘氣仍在，土氣轉強。"},
+ "巳":{木:2,火:5,土:3,金:2,水:1,label:"初夏火旺，土得生，水弱。"},
+ "午":{木:2,火:5,土:3,金:1,水:1,label:"盛夏火最旺，水受制最明顯。"},
+ "未":{木:2,火:3,土:4,金:2,水:1,label:"未為燥土，火餘氣仍在，土旺。"},
+ "申":{木:1,火:2,土:2,金:5,水:3,label:"初秋金旺，水漸生，木弱。"},
+ "酉":{木:1,火:1,土:2,金:5,水:3,label:"仲秋金最旺，木受制。"},
+ "戌":{木:1,火:2,土:4,金:3,水:2,label:"戌為燥土，金餘氣仍在，土強。"},
+ "亥":{木:3,火:1,土:2,金:2,水:5,label:"初冬水旺，木得生，火弱。"},
+ "子":{木:2,火:1,土:2,金:2,水:5,label:"仲冬水最旺，火受制。"},
+ "丑":{木:1,火:1,土:4,金:2,水:3,label:"丑為寒濕土，水餘氣仍在，土藏水金。"}
+};
+let chart=null;
+
+function mod(n,m){return ((n%m)+m)%m}
+function pad(n){return String(n).padStart(2,"0")}
+function charElement(ch){return stemInfo[ch]?.element || branchElement[ch] || ""}
+function clsByChar(ch){return gzClass[charElement(ch)] || ""}
+function cardClsByChar(ch){return elementClass[charElement(ch)] || ""}
+function gzSpan(ch){return `<span class="gz-char ${clsByChar(ch)}">${ch}</span>`}
+function coloredGZ(gz){return `${gzSpan(gz[0])}${gzSpan(gz[1])}`}
+function verticalGZ(gz){return `<div class="pillar-stack">${gzSpan(gz[0])}${gzSpan(gz[1])}</div>`}
+function stemInline(s){return `<span class="gz-char ${clsByChar(s)}">${s}</span>`}
+function branchInline(b){return `<span class="gz-char ${clsByChar(b)}">${b}</span>`}
+
+function getTermDay(year,term){
+ const C=(year>=2000?termC21:termC20)[term]; const y=year%100;
+ let d=Math.floor(y*.2422+C)-Math.floor((y-1)/4);
+ const ex={"2024_立春":4,"2024_驚蟄":5,"2025_立春":3,"2025_驚蟄":5,"2026_立春":4,"2026_驚蟄":5};
+ return ex[`${year}_${term}`]||d;
+}
+function termDate(year,term){return new Date(year,termMonth[term]-1,getTermDay(year,term),0,0,0,0)}
+function jdnAtLocalMidnight(year,month,day){
+ let Y=year,M=month,D=day; if(M<=2){Y--;M+=12}
+ const A=Math.floor(Y/100),B=2-A+Math.floor(A/4);
+ return Math.floor(365.25*(Y+4716))+Math.floor(30.6001*(M+1))+D+B-1524.5;
+}
+function yearPillar(year,month,day,hour,minute){
+ const input=new Date(year,month-1,day,hour,minute).getTime();
+ const lichun=termDate(year,"立春").getTime();
+ const py=input>=lichun?year:year-1;
+ const si=mod(py-4,10),bi=mod(py-4,12);
+ return {pillar:stems[si]+branches[bi],stem:stems[si],branch:branches[bi],pillarYear:py,after:input>=lichun,lichunDay:getTermDay(year,"立春")};
+}
+function monthPillar(year,month,day,hour,minute,yearStem){
+ const input=new Date(year,month-1,day,hour,minute).getTime();
+ let selected=null;
+ if(input<termDate(year,"立春").getTime()){
+   selected=input>=termDate(year,"小寒").getTime()?{term:"小寒",branch:"丑",order:11}:{term:"大雪",branch:"子",order:10};
+ }else{
+   const terms=[["立春","寅",0],["驚蟄","卯",1],["清明","辰",2],["立夏","巳",3],["芒種","午",4],["小暑","未",5],["立秋","申",6],["白露","酉",7],["寒露","戌",8],["立冬","亥",9],["大雪","子",10]];
+   terms.forEach(([term,branch,order])=>{if(input>=termDate(year,term).getTime()) selected={term,branch,order}})
+ }
+ const start={"甲":2,"己":2,"乙":4,"庚":4,"丙":6,"辛":6,"丁":8,"壬":8,"戊":0,"癸":0}[yearStem];
+ const stem=stems[mod(start+selected.order,10)];
+ return {pillar:stem+selected.branch,stem,branch:selected.branch,term:selected.term,order:selected.order};
+}
+function dayPillar(year,month,day,hour,minute,ziRule){
+ let jdn=jdnAtLocalMidnight(year,month,day); let late=false;
+ if(ziRule==="late"&&hour===23){jdn++;late=true}
+ const index=mod(Math.round(jdn-2445732.5)+2,60);
+ const p=ganzhi60[index];
+ return {pillar:p,index,jdn,stem:p[0],branch:p[1],late};
+}
+function hourBranch(hour){
+ if(hour===23||hour===0)return{branch:"子",index:0,label:"23:00–00:59"};
+ if(hour<=2)return{branch:"丑",index:1,label:"01:00–02:59"};
+ if(hour<=4)return{branch:"寅",index:2,label:"03:00–04:59"};
+ if(hour<=6)return{branch:"卯",index:3,label:"05:00–06:59"};
+ if(hour<=8)return{branch:"辰",index:4,label:"07:00–08:59"};
+ if(hour<=10)return{branch:"巳",index:5,label:"09:00–10:59"};
+ if(hour<=12)return{branch:"午",index:6,label:"11:00–12:59"};
+ if(hour<=14)return{branch:"未",index:7,label:"13:00–14:59"};
+ if(hour<=16)return{branch:"申",index:8,label:"15:00–16:59"};
+ if(hour<=18)return{branch:"酉",index:9,label:"17:00–18:59"};
+ if(hour<=20)return{branch:"戌",index:10,label:"19:00–20:59"};
+ return{branch:"亥",index:11,label:"21:00–22:59"};
+}
+function hourPillar(dayStem,hour){
+ const hb=hourBranch(hour);
+ const start={"甲":0,"己":0,"乙":2,"庚":2,"丙":4,"辛":4,"丁":6,"壬":6,"戊":8,"癸":8}[dayStem];
+ const stem=stems[mod(start+hb.index,10)];
+ return {pillar:stem+hb.branch,stem,branch:hb.branch,label:hb.label};
+}
+function relationGroup(dayEl,targetEl){
+ const d=elementCycle.indexOf(dayEl),t=elementCycle.indexOf(targetEl);
+ if(t===d)return"same"; if(t===mod(d+1,5))return"output"; if(t===mod(d+2,5))return"wealth"; if(t===mod(d+3,5))return"officer"; return"resource";
+}
+function getTenGod(dayStem,targetStem){
+ const day=stemInfo[dayStem],target=stemInfo[targetStem],same=day.polarity===target.polarity;
+ const g=relationGroup(day.element,target.element);
+ if(g==="same")return same?"比肩":"劫財";
+ if(g==="output")return same?"食神":"傷官";
+ if(g==="wealth")return same?"偏財":"正財";
+ if(g==="officer")return same?"七殺":"正官";
+ return same?"偏印":"正印";
+}
+function strengthWord(score){return score>=5?"旺":score===4?"相":score===3?"休":score===2?"囚":"死"}
+function renderPillar(cardId,title,obj,sub){
+ const card=document.getElementById(cardId);
+ card.className=`panel pillar ${cardClsByChar(obj.stem)}`;
+ card.innerHTML=`<div class="pillar-title">${title}</div>${verticalGZ(obj.pillar)}<div class="sub">${sub}</div><div class="pill">${obj.stem}干屬${charElement(obj.stem)}</div>`;
+}
+function calculate(){
+ const y=+document.getElementById("year").value,m=+document.getElementById("month").value,d=+document.getElementById("day").value,h=+document.getElementById("hour").value,min=+document.getElementById("minute").value,zi=document.getElementById("ziRule").value;
+ const yp=yearPillar(y,m,d,h,min),mp=monthPillar(y,m,d,h,min,yp.stem),dp=dayPillar(y,m,d,h,min,zi),hp=hourPillar(dp.stem,h);
+ chart={input:{y,m,d,h,min,zi},year:yp,month:mp,day:dp,hour:hp};
+ renderPillar("yearCard","年柱",yp,yp.after?"立春後":"立春前");
+ renderPillar("monthCard","月柱",mp,`${mp.term}後・${mp.branch}月`);
+ renderPillar("dayCard","日柱",dp,dp.late?"晚子時換日後":"JDN 連續日序");
+ renderPillar("hourCard","時柱",hp,`${pad(h)}:${pad(min)}・${hp.branch}時`);
+ document.getElementById("inputDetail").textContent=`${y}/${pad(m)}/${pad(d)} ${pad(h)}:${pad(min)}`;
+ document.getElementById("jdnDetail").textContent=dp.jdn;
+ document.getElementById("dayIndexDetail").textContent=`${dp.index}（${dp.pillar}）`;
+ document.getElementById("yearDetail").textContent=`${y} 立春約 2/${yp.lichunDay}；${yp.after?"已過立春":"未過立春"}，取 ${yp.pillarYear} 年：${yp.pillar}`;
+ document.getElementById("monthDetail").textContent=`已過 ${mp.term}，取 ${mp.branch}月；${yp.stem}年 ${mp.branch}月為 ${mp.pillar}`;
+ document.getElementById("hourDetail").textContent=`${pad(h)}:${pad(min)} 屬 ${hp.branch}時；${dp.stem}日推得 ${hp.pillar}`;
+ document.getElementById("transitYear").value = document.getElementById("transitYear").value || new Date().getFullYear();
+ updateAnalysis();
+}
+function useCurrentTime(){
+ const n=new Date();
+ document.getElementById("year").value=n.getFullYear(); document.getElementById("month").value=n.getMonth()+1; document.getElementById("day").value=n.getDate(); document.getElementById("hour").value=n.getHours(); document.getElementById("minute").value=n.getMinutes();
+ calculate();
+}
+function showPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(id).classList.add("active");if(id==="analysisPage")updateAnalysis();if(id==="combinationPage")updateCombinationPage();window.scrollTo({top:0,behavior:"smooth"})}
+
+function tenPart(label,char,type,stemForGod){
+ const dayStem=chart.day.stem, info=stemInfo[stemForGod];
+ const god=label==="日干"?"日主":getTenGod(dayStem,stemForGod);
+ const desc=label==="日干"?"命盤核心。其他七個字皆以日主為中心判斷。":tenGodText[god];
+ return `<div class="ten-part ${cardClsByChar(char)}"><div class="ten-char">${gzSpan(char)}</div><div class="ten-badge">${god}</div><div class="ten-role">${label}｜${type}</div><div class="ten-desc">對象：${type==="地支本氣"?char+"支本氣：":""}${stemInline(stemForGod)}${info.element}${info.polarity}<br>${desc}</div></div>`;
+}
+
+const meetingSets=[
+  {name:"寅卯辰", element:"木", branches:["寅","卯","辰"], type:"三會木局"},
+  {name:"巳午未", element:"火", branches:["巳","午","未"], type:"三會火局"},
+  {name:"申酉戌", element:"金", branches:["申","酉","戌"], type:"三會金局"},
+  {name:"亥子丑", element:"水", branches:["亥","子","丑"], type:"三會水局"}
+];
+const trineSets=[
+  {name:"亥卯未", element:"木", branches:["亥","卯","未"], type:"三合木局"},
+  {name:"寅午戌", element:"火", branches:["寅","午","戌"], type:"三合火局"},
+  {name:"巳酉丑", element:"金", branches:["巳","酉","丑"], type:"三合金局"},
+  {name:"申子辰", element:"水", branches:["申","子","辰"], type:"三合水局"}
+];
+
+function branchArrayWithLabels(includeTransit=false){
+  const arr=[
+    {label:"年支",branch:chart.year.branch},
+    {label:"月支",branch:chart.month.branch},
+    {label:"日支",branch:chart.day.branch},
+    {label:"時支",branch:chart.hour.branch}
+  ];
+  if(includeTransit){
+    const y=+document.getElementById("comboTransitYear").value || new Date().getFullYear();
+    const p=yearGanzhiSimple(y);
+    arr.push({label:`${y}流年`,branch:p[1],pillar:p});
+  }
+  return arr;
+}
+function evaluateSet(set, branchItems){
+  const present=set.branches.filter(b=>branchItems.some(x=>x.branch===b));
+  const missing=set.branches.filter(b=>!present.includes(b));
+  const labels=present.map(b=>{
+    const item=branchItems.find(x=>x.branch===b);
+    return `${item.label}${branchInline(b)}`;
+  });
+  return {present,missing,labels,complete:missing.length===0,count:present.length};
+}
+function renderComboCard(set, result, mode){
+  const cls=elementClass[set.element] || "";
+  const status=result.complete ? "成局" : result.count===2 ? "半成／有象" : result.count===1 ? "單支有氣" : "未見";
+  return `<article class="combo-card ${cls}">
+    <span class="combo-type">${mode}</span>
+    <b>${set.branches.map(branchInline).join(" ")}｜${set.type}</b>
+    <div>五行：${set.element}</div>
+    <div>已見：${result.labels.length?result.labels.join("、"):"—"}</div>
+    <div class="combo-status">狀態：${status}</div>
+    <div class="combo-missing">缺字：${result.missing.length?result.missing.map(branchInline).join("、"):"無"}</div>
+  </article>`;
+}
+
+
+function getLuckCyclesData(){
+  if(!chart) calculate();
+
+  const mode=document.getElementById("luckMode")?.value || "auto";
+  const info=autoLuckInfo();
+  const dir=info.dir;
+  const forward=dir==="順行";
+  const startIndex=ganzhi60.indexOf(chart.month.pillar);
+
+  let startDate=info.start;
+  if(mode==="manual"){
+    startDate=addYM(
+      new Date(chart.input.y,chart.input.m-1,chart.input.d),
+      +document.getElementById("startAge").value,
+      0
+    );
+  }
+
+  return Array.from({length:9},(_,i)=>{
+    const s=addYM(startDate,i*10,0);
+    const e=addYM(startDate,(i+1)*10,0);
+    e.setDate(e.getDate()-1);
+
+    const p=ganzhi60[
+      mod(startIndex+(forward?i+1:-(i+1)),60)
+    ];
+
+    return {
+      label:"大運",
+      pillar:p,
+      stem:p[0],
+      branch:p[1],
+      start:s,
+      end:e,
+      order:i+1,
+      dir,
+      ageStart:info.years+i*10,
+      ageEnd:info.years+i*10+9
+    };
+  });
+}
+
+function getLuckPillarForDate(targetDate){
+  const cycles=getLuckCyclesData();
+  return cycles.find(c=>targetDate>=c.start && targetDate<=c.end) || cycles[0];
+}
+
+function getLuckPillarForYear(targetYear){
+  if(!chart) calculate();
+
+  // 年度分析用：以該流年年度中段作為判定點，
+  // 避免大運交接月剛好落在立春之後/之前，導致六柱整合頁抓到上一柱大運。
+  // 此函式與大運卡片共用 getLuckCyclesData()，所以會與大運試算結果同步。
+  const targetDate=new Date(targetYear, 6, 1, 12, 0, 0, 0); // 7月1日中午
+  return getLuckPillarForDate(targetDate);
+}
+
+function getCurrentLuckPillar(){
+  if(!chart) calculate();
+  return getLuckPillarForDate(new Date());
+}
+
+function getSixPillars(){
+  const ty=+document.getElementById("comboTransitYear").value || new Date().getFullYear();
+
+  const transit=yearGanzhiSimple(ty);
+
+  // 關鍵修正：
+  // 大運不再固定使用「現在」的大運，
+  // 而是依照指定流年自動切換對應的大運。
+  const luck=getLuckPillarForYear(ty);
+
+  return [
+    {label:"年柱",pillar:chart.year.pillar,stem:chart.year.stem,branch:chart.year.branch},
+    {label:"月柱",pillar:chart.month.pillar,stem:chart.month.stem,branch:chart.month.branch},
+    {label:"日柱",pillar:chart.day.pillar,stem:chart.day.stem,branch:chart.day.branch},
+    {label:"時柱",pillar:chart.hour.pillar,stem:chart.hour.stem,branch:chart.hour.branch},
+
+    {
+      label:`第${luck.order}步大運`,
+      pillar:luck.pillar,
+      stem:luck.stem,
+      branch:luck.branch,
+      extra:`對應${ty}流年年度｜${fmtYM(luck.start)}－${fmtYM(luck.end)}｜${luck.ageStart}-${luck.ageEnd}歲｜${luck.dir}`
+    },
+
+    {
+      label:`${ty}流年`,
+      pillar:transit,
+      stem:transit[0],
+      branch:transit[1]
+    }
+  ];
+}
+
+function updateSixPillarIntegratedAnalysis(){
+  if(!chart) calculate();
+  const six=getSixPillars();
+  const dayStem=chart.day.stem;
+  const dayEl=stemInfo[dayStem].element;
+  const monthBranch=chart.month.branch;
+  const strengths=seasonStrengthMap[monthBranch];
+  const dayScore=strengths[dayEl];
+
+  document.getElementById("sixPillarGrid").innerHTML=six.map(p=>{
+    return `<article class="six-pillar-card ${cardClsByChar(p.stem)}">
+      <div class="title">${p.label}</div>
+      <div class="vertical">${gzSpan(p.stem)}${gzSpan(p.branch)}</div>
+      <div>${stemInline(p.stem)}｜${getTenGod(dayStem,p.stem)}</div>
+      <div>支本氣：${stemInline(branchMainStem[p.branch])}｜${getTenGod(dayStem,branchMainStem[p.branch])}</div>
+      ${p.extra?`<div class="combo-missing">${p.extra}</div>`:""}
+    </article>`;
+  }).join("");
+
+  document.getElementById("sixPillarNote").innerHTML=`日主為 ${stemInline(dayStem)}${dayEl}，以下統計將原局四柱＋目前大運＋指定流年一起納入。`;
+
+  const elementCounts={木:0,火:0,土:0,金:0,水:0};
+  six.forEach(p=>{
+    elementCounts[charElement(p.stem)]++;
+    elementCounts[charElement(p.branch)]++;
+  });
+  document.getElementById("twelveElementGrid").innerHTML=["木","火","土","金","水"].map(el=>{
+    return `<div class="energy-card ${elementClass[el]}"><b>${el}</b><div>${elementCounts[el]} / 12</div></div>`;
+  }).join("");
+
+  const relationCounts={same:0,output:0,wealth:0,officer:0,resource:0};
+  six.forEach(p=>{
+    [p.stem, branchMainStem[p.branch]].forEach(st=>{
+      const rel=relationGroup(dayEl,stemInfo[st].element);
+      relationCounts[rel]++;
+    });
+  });
+  const relNames={same:"同我",output:"我生",wealth:"我剋",officer:"剋我",resource:"生我"};
+  const relClasses={same:"wood",output:"fire",wealth:"earth",officer:"metal",resource:"water"};
+  document.getElementById("dayMasterRelationGrid").innerHTML=["same","output","wealth","officer","resource"].map(k=>{
+    return `<div class="relation-summary-card ${relClasses[k]}"><b>${relNames[k]}</b><div>${relationCounts[k]} / 12</div></div>`;
+  }).join("");
+
+  const weak=dayScore<=2;
+  const strong=dayScore>=4;
+  let favorable=[], avoid=[], explain="";
+  if(weak){
+    favorable=["生我（印）","同我（比劫）"];
+    avoid=["剋我（官殺）過強","我剋（財）過多","我生（食傷）過洩"];
+    explain=`日主在${monthBranch}月為「${strengthWord(dayScore)}」，初判偏弱，整合六柱後宜優先觀察是否有足夠生扶。`;
+  }else if(strong){
+    favorable=["我生（食傷）","我剋（財）","剋我（官殺）"];
+    avoid=["同我（比劫）過多","生我（印）過多"];
+    explain=`日主在${monthBranch}月為「${strengthWord(dayScore)}」，初判偏旺，整合六柱後宜觀察是否能洩、耗、制。`;
+  }else{
+    favorable=["依全局偏枯取用","依寒暖燥濕調候"];
+    avoid=["暫不直接定忌"];
+    explain=`日主在${monthBranch}月為「${strengthWord(dayScore)}」，月令中和，需看六柱五行是否偏枯再判斷。`;
+  }
+  document.getElementById("favorableBox").innerHTML=
+    favorable.map(x=>`<span class="favorable-tag wood">喜：${x}</span>`).join("")+
+    avoid.map(x=>`<span class="favorable-tag fire">忌：${x}</span>`).join("");
+  document.getElementById("favorableExplain").textContent=explain;
+
+  const branchItems=six.map(p=>({label:p.label,branch:p.branch}));
+  const rels=getBranchRelations(branchItems);
+  const meetingHits=[...meetingSets,...trineSets].map(set=>{
+    const r=evaluateSet(set,branchItems);
+    return r.count>=2 ? {set,r} : null;
+  }).filter(Boolean);
+
+  const relHtml=rels.length
+    ? rels.map(r=>`<span class="tag ${r.type==="合"?"wood":"fire"}">${r.text}</span>`).join("")
+    : '<span class="tag">未見明顯合沖刑害</span>';
+  const comboHtml=meetingHits.length
+    ? meetingHits.map(x=>`<span class="tag ${elementClass[x.set.element]}">${x.set.type}：已見${x.r.present.map(branchInline).join("")}${x.r.complete?"｜成局":"｜有象"}</span>`).join("")
+    : '<span class="tag">未見明顯三會／三合／半合</span>';
+
+  document.getElementById("sixBranchRelationTags").innerHTML=comboHtml+relHtml;
+}
+
+
+function updateCombinationPage(){
+  if(!chart)calculate();
+  const base=branchArrayWithLabels(false);
+  const withTransit=branchArrayWithLabels(true);
+  const ty=+document.getElementById("comboTransitYear").value || new Date().getFullYear();
+  const tp=yearGanzhiSimple(ty);
+
+  document.getElementById("baseBranchesBox").innerHTML=base.map(x=>`<span class="tag ${cardClsByChar(x.branch)}">${x.label}：${branchInline(x.branch)}</span>`).join("");
+  document.getElementById("transitBranchBox").innerHTML=`${ty} 流年：${coloredGZ(tp)}，流年地支為 ${branchInline(tp[1])}`;
+
+  document.getElementById("meetingGrid").innerHTML=meetingSets.map(set=>{
+    const r=evaluateSet(set,withTransit);
+    return renderComboCard(set,r,"三會局");
+  }).join("");
+
+  document.getElementById("trineGrid").innerHTML=trineSets.map(set=>{
+    const r=evaluateSet(set,withTransit);
+    return renderComboCard(set,r,"三合局");
+  }).join("");
+
+  const halfCandidates=trineSets.map(set=>{
+    const r=evaluateSet(set,withTransit);
+    return renderComboCard(set,r,"半合／三合檢查");
+  }).join("");
+  document.getElementById("halfComboGrid").innerHTML=halfCandidates;
+
+  updateSixPillarIntegratedAnalysis();
+}
+
+
+function updateAnalysis(){
+ if(!chart)calculate();
+ const dayStem=chart.day.stem, dayEl=stemInfo[dayStem].element;
+ const pillars=[
+  {title:"年柱",stemLabel:"年干",branchLabel:"年支",stem:chart.year.stem,branch:chart.year.branch},
+  {title:"月柱",stemLabel:"月干",branchLabel:"月支",stem:chart.month.stem,branch:chart.month.branch},
+  {title:"日柱",stemLabel:"日干",branchLabel:"日支",stem:chart.day.stem,branch:chart.day.branch},
+  {title:"時柱",stemLabel:"時干",branchLabel:"時支",stem:chart.hour.stem,branch:chart.hour.branch}
+ ];
+ const counts={same:0,output:0,wealth:0,officer:0,resource:0};
+ pillars.forEach(p=>{
+   [[p.stemLabel,p.stem,p.stem],[p.branchLabel,p.branch,branchMainStem[p.branch]]].forEach(([label,ch,st])=>{
+     if(label==="日干")return;
+     counts[relationGroup(dayEl,stemInfo[st].element)]++;
+   });
+ });
+ document.getElementById("sameCount").textContent=counts.same; document.getElementById("outputCount").textContent=counts.output; document.getElementById("wealthCount").textContent=counts.wealth; document.getElementById("officerCount").textContent=counts.officer; document.getElementById("resourceCount").textContent=counts.resource;
+ document.getElementById("dayMasterNote").innerHTML=`日主：${stemInline(dayStem)}${dayEl}${stemInfo[dayStem].polarity}。以下十神皆以 ${stemInline(dayStem)}${dayEl} 為中心判斷。`;
+ document.getElementById("tenGodCards").innerHTML=pillars.map(p=>`<article class="ten-god-card"><div class="ten-title">${p.title}</div>${tenPart(p.stemLabel,p.stem,"天干",p.stem)}${tenPart(p.branchLabel,p.branch,"地支本氣",branchMainStem[p.branch])}</article>`).join("");
+
+ const branchItems=pillars.map(p=>({label:p.branchLabel,branch:p.branch}));
+ document.getElementById("hiddenStemTable").innerHTML=branchItems.map(item=>{
+   const chips=hiddenStemsMap[item.branch].map(([st,role])=>`<span class="hidden-chip ${cardClsByChar(st)}">${role}：${stemInline(st)}${stemInfo[st].element}${stemInfo[st].polarity}｜${getTenGod(dayStem,st)}</span>`).join("");
+   return `<tr><th>${item.label}「${branchInline(item.branch)}」</th><td><div class="hidden-stems">${chips}</div></td></tr>`;
+ }).join("");
+ document.getElementById("branchDetailGrid").innerHTML=branchItems.map(item=>{
+   const main=branchMainStem[item.branch], mainInfo=stemInfo[main], chips=hiddenStemsMap[item.branch].map(([st,role])=>`<span class="hidden-chip ${cardClsByChar(st)}">${role}：${stemInline(st)}${stemInfo[st].element}${stemInfo[st].polarity}｜${getTenGod(dayStem,st)}</span>`).join("");
+   return `<article class="branch-card ${cardClsByChar(item.branch)}"><div class="branch-title">${branchInline(item.branch)}<span>${item.label}</span></div><div class="branch-main">本氣：${stemInline(main)}${mainInfo.element}${mainInfo.polarity}｜${getTenGod(dayStem,main)}</div><div class="hidden-stems">${chips}</div></article>`;
+ }).join("");
+
+ const monthBranch=chart.month.branch, strengths=seasonStrengthMap[monthBranch], monthEl=branchElement[monthBranch], dayScore=strengths[dayEl];
+ document.getElementById("seasonMonthDetail").innerHTML=`${branchInline(monthBranch)}月令`;
+ document.getElementById("seasonElementDetail").innerHTML=`${monthEl}行當令`;
+ document.getElementById("dayStrengthDetail").innerHTML=`${stemInline(dayStem)}${dayEl}在${branchInline(monthBranch)}月為「${strengthWord(dayScore)}」`;
+ document.getElementById("seasonExplain").textContent=`${monthBranch}月：${strengths.label} 此處只看月令季節，不含全局通根、透干與合沖。`;
+ document.getElementById("strengthBars").innerHTML=["木","火","土","金","水"].map(el=>`<div class="strength-row"><div><b>${el}</b> ${strengthWord(strengths[el])}</div><div class="bar"><span style="width:${strengths[el]*20}%"></span></div><div>${strengths[el]}/5</div></div>`).join("");
+
+ updateVisibleRoot(branchItems,pillars);
+ updateRelations(branchItems);
+ updatePatternUseful(monthBranch,dayStem,dayScore);
+ updateTransit(branchItems,dayStem);
+ updateLuckOnly(false);
+}
+function updateVisibleRoot(branchItems,pillars){
+ const heavenly=[["年干",chart.year.stem],["月干",chart.month.stem],["日干",chart.day.stem],["時干",chart.hour.stem]];
+ document.getElementById("visibleStemTable").innerHTML=branchItems.map(item=>{
+  const found=hiddenStemsMap[item.branch].filter(([st])=>heavenly.some(([,hs])=>hs===st)).map(([st])=>`<span class="tag ${cardClsByChar(st)}">${stemInline(st)} 透於 ${heavenly.filter(([,hs])=>hs===st).map(([lab])=>lab).join("、")}</span>`).join("");
+  return `<tr><th>${item.label}「${branchInline(item.branch)}」</th><td>${found||'<span class="tag">未見明顯透干</span>'}</td></tr>`;
+ }).join("");
+ const allHidden=branchItems.flatMap(b=>hiddenStemsMap[b.branch].map(([st,role])=>({st,role,branch:b.branch,label:b.label})));
+ document.getElementById("rootTable").innerHTML=heavenly.map(([lab,st])=>{
+  const roots=allHidden.filter(h=>h.st===st).map(r=>`<span class="tag ${cardClsByChar(st)}">${r.label}${branchInline(r.branch)}：${r.role}</span>`).join("");
+  return `<tr><th>${lab} ${stemInline(st)}</th><td><div class="tag-list">${roots||'<span class="tag">無明顯同干根</span>'}</div></td></tr>`;
+ }).join("");
+}
+const combos={"子丑":"六合（土）","寅亥":"六合（木）","卯戌":"六合（火）","辰酉":"六合（金）","巳申":"六合（水）","午未":"六合（土）"};
+const clashes={"子午":"六沖","丑未":"六沖","寅申":"六沖","卯酉":"六沖","辰戌":"六沖","巳亥":"六沖"};
+const harms={"子未":"六害","丑午":"六害","寅巳":"六害","卯辰":"六害","申亥":"六害","酉戌":"六害"};
+const punish={"寅巳":"三刑","巳申":"三刑","寅申":"三刑","丑戌":"三刑","戌未":"三刑","丑未":"三刑","子卯":"無禮之刑","辰辰":"自刑","午午":"自刑","酉酉":"自刑","亥亥":"自刑"};
+function pairKey(a,b){return [a,b].sort((x,y)=>branches.indexOf(x)-branches.indexOf(y)).join("")}
+function getBranchRelations(items,extraBranch=null,extraLabel="流年"){
+ const arr=[...items]; if(extraBranch)arr.push({label:extraLabel,branch:extraBranch});
+ const rel=[];
+ for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){
+  const a=arr[i],b=arr[j],k=pairKey(a.branch,b.branch);
+  if(combos[k])rel.push({type:"合",text:`${a.label}${a.branch} × ${b.label}${b.branch}：${combos[k]}`});
+  if(clashes[k])rel.push({type:"沖",text:`${a.label}${a.branch} × ${b.label}${b.branch}：六沖`});
+  if(harms[k])rel.push({type:"害",text:`${a.label}${a.branch} × ${b.label}${b.branch}：六害`});
+  if(punish[k])rel.push({type:"刑",text:`${a.label}${a.branch} × ${b.label}${b.branch}：${punish[k]}`});
+ }
+ return rel;
+}
+function updateRelations(branchItems){
+ const rels=getBranchRelations(branchItems);
+ document.getElementById("relationTags").innerHTML=rels.length?rels.map(r=>`<span class="tag ${r.type==="合"?"wood":"fire"}">${r.text}</span>`).join(""):'<span class="tag">四柱地支未見明顯合沖刑害</span>';
+}
+function updatePatternUseful(monthBranch,dayStem,dayScore){
+ const main=branchMainStem[monthBranch], god=getTenGod(dayStem,main), dayEl=stemInfo[dayStem].element;
+ document.getElementById("patternMainQi").innerHTML=`${branchInline(monthBranch)}月主氣：${stemInline(main)}${stemInfo[main].element}${stemInfo[main].polarity}`;
+ document.getElementById("patternTenGod").textContent=god;
+ document.getElementById("patternName").textContent=`${god}格初判`;
+ document.getElementById("patternNote").textContent=`以月令主氣 ${main} 對日主 ${dayStem} 形成「${god}」，可作格局初判。是否成格仍需看透干、通根、清濁、制化與全盤配合。`;
+ document.getElementById("usefulStrength").innerHTML=`${stemInline(dayStem)}${dayEl}在${branchInline(monthBranch)}月為「${strengthWord(dayScore)}」`;
+ if(dayScore<=2){document.getElementById("usefulGods").textContent=`偏向喜生扶：印星、比劫`;document.getElementById("avoidGods").textContent=`偏忌過度耗洩與克制：食傷、財、官殺需謹慎`;}
+ else if(dayScore>=4){document.getElementById("usefulGods").textContent=`偏向喜洩耗制：食傷、財星、官殺`;document.getElementById("avoidGods").textContent=`偏忌再生扶：比劫、印星過多`;}
+ else{document.getElementById("usefulGods").textContent=`日主月令中和，需看全盤偏枯再取用`;document.getElementById("avoidGods").textContent=`暫不直接定忌，需觀察五行是否偏枯、寒暖燥濕`;}
+}
+function yearGanzhiSimple(year){return stems[mod(year-4,10)]+branches[mod(year-4,12)]}
+function updateTransit(branchItems,dayStem){
+ const start=+document.getElementById("transitYear").value || new Date().getFullYear();
+ document.getElementById("transitYearGrid").innerHTML=Array.from({length:6},(_,i)=>{
+  const y=start+i,p=yearGanzhiSimple(y),bs=branchMainStem[p[1]],rels=getBranchRelations(branchItems,p[1],"流年");
+  return `<div class="transit-card"><div class="year-label">${y}年</div><b>${coloredGZ(p)}</b><div>天干：${stemInline(p[0])}｜${getTenGod(dayStem,p[0])}</div><div>地支本氣：${stemInline(bs)}｜${getTenGod(dayStem,bs)}</div><div class="tag-list" style="margin-top:10px">${rels.length?rels.map(r=>`<span class="tag ${r.type==="合"?"wood":"fire"}">${r.text}</span>`).join(""):'<span class="tag">無明顯合沖刑害</span>'}</div></div>`;
+ }).join("");
+}
+function allSectionDatesAround(year){
+ const terms=["小寒","立春","驚蟄","清明","立夏","芒種","小暑","立秋","白露","寒露","立冬","大雪"],arr=[];
+ [year-1,year,year+1].forEach(y=>terms.forEach(term=>arr.push({year:y,term,date:termDate(y,term)})));
+ return arr.sort((a,b)=>a.date-b.date);
+}
+function luckDirection(yearStem,gender){const yang=["甲","丙","戊","庚","壬"].includes(yearStem);return ((gender==="male"&&yang)||(gender==="female"&&!yang))?"順行":"逆行"}
+function addYM(date,years,months){const d=new Date(date);d.setFullYear(d.getFullYear()+years);d.setMonth(d.getMonth()+months);return d}
+function fmtYM(d){return `${d.getFullYear()}年${pad(d.getMonth()+1)}月`}
+function autoLuckInfo(){
+ const {y,m,d,h,min}=chart.input, birth=new Date(y,m-1,d,h,min), gender=document.getElementById("gender").value, dir=luckDirection(chart.year.stem,gender), sections=allSectionDatesAround(y);
+ const target=dir==="順行"?sections.find(x=>x.date>birth):sections.filter(x=>x.date<birth).pop();
+ if(!target)return{years:+document.getElementById("startAge").value,months:0,start:addYM(birth,+document.getElementById("startAge").value,0),dir,target:"未取得節氣"};
+ const diff=Math.abs(target.date-birth)/(1000*60*60*24),months=Math.round(diff*4),years=Math.floor(months/12),mm=months%12;
+ return{years,months:mm,start:addYM(birth,years,mm),dir,target:`${target.year}/${pad(termMonth[target.term])}/${pad(getTermDay(target.year,target.term))} ${target.term}`};
+}
+function updateLuckOnly(showAlert=true){
+ if(!chart&&showAlert){alert("請先完成四柱排盤");return}
+
+ const gender=document.getElementById("gender").value;
+ const genderText=gender==="male"?"男命":"女命";
+ const cycles=getLuckCyclesData();
+ const info=autoLuckInfo();
+ const dir=info.dir;
+ const now=new Date();
+
+ let desc=`自動起運：約 ${info.years}歲${info.months}個月｜取${dir}，參考節氣：${info.target}`;
+ if((document.getElementById("luckMode")?.value || "auto")==="manual"){
+   desc=`手動起運：${document.getElementById("startAge").value}歲｜取${dir}`;
+ }
+
+ document.getElementById("luckCycles").innerHTML=cycles.map((c,i)=>{
+  const st=c.stem, br=c.branch, bs=branchMainStem[br];
+  const cur=now>=c.start&&now<=c.end;
+  return `<div class="luck-card ${cur?"current-luck":""}">
+    <div class="year-label">${fmtYM(c.start)}–${fmtYM(c.end)}</div>
+    <b>${coloredGZ(c.pillar)}</b>
+    <div class="luck-line">${genderText}｜${c.dir}</div>
+    <div class="luck-line">年齡：${c.ageStart}–${c.ageEnd}歲</div>
+    <div class="luck-line">天干：${stemInline(st)}｜${getTenGod(chart.day.stem,st)}</div>
+    <div class="luck-line">地支本氣：${stemInline(bs)}｜${getTenGod(chart.day.stem,bs)}</div>
+  </div>`;
+ }).join("");
+
+ document.getElementById("luckNote").textContent=`${desc}。自動起運目前採近似節氣日期；若出生在交節日前後，請以精確節氣時刻校正。`;
+}
+
+function buildPromptMarkdown(){
+  if(!chart) calculate();
+
+  const ty = +document.getElementById("comboTransitYear")?.value || +document.getElementById("transitYear")?.value || new Date().getFullYear();
+  const transit = yearGanzhiSimple(ty);
+  const luck = getLuckPillarForYear ? getLuckPillarForYear(ty) : getCurrentLuckPillar();
+
+  const gender = document.getElementById("gender")?.value === "female" ? "女命" : "男命";
+  const birthText = `${chart.input.y}/${pad(chart.input.m)}/${pad(chart.input.d)} ${pad(chart.input.h)}:${pad(chart.input.min)}`;
+  const dayStem = chart.day.stem;
+  const dayElement = stemInfo[dayStem].element;
+  const monthBranch = chart.month.branch;
+  const strengths = seasonStrengthMap[monthBranch];
+  const dayScore = strengths[dayElement];
+
+  const six = typeof getSixPillars === "function" ? getSixPillars() : [
+    {label:"年柱",pillar:chart.year.pillar,stem:chart.year.stem,branch:chart.year.branch},
+    {label:"月柱",pillar:chart.month.pillar,stem:chart.month.stem,branch:chart.month.branch},
+    {label:"日柱",pillar:chart.day.pillar,stem:chart.day.stem,branch:chart.day.branch},
+    {label:"時柱",pillar:chart.hour.pillar,stem:chart.hour.stem,branch:chart.hour.branch},
+    {label:"大運",pillar:luck.pillar,stem:luck.stem,branch:luck.branch},
+    {label:`${ty}流年`,pillar:transit,stem:transit[0],branch:transit[1]}
+  ];
+
+  const elementCounts = {木:0,火:0,土:0,金:0,水:0};
+  six.forEach(p=>{
+    elementCounts[charElement(p.stem)]++;
+    elementCounts[charElement(p.branch)]++;
+  });
+
+  const relationCounts = {同我:0,我生:0,我剋:0,剋我:0,生我:0};
+  const relName = {same:"同我",output:"我生",wealth:"我剋",officer:"剋我",resource:"生我"};
+  six.forEach(p=>{
+    [p.stem, branchMainStem[p.branch]].forEach(st=>{
+      const rel = relationGroup(dayElement, stemInfo[st].element);
+      relationCounts[relName[rel]]++;
+    });
+  });
+
+  const hiddenRows = [
+    ["年支", chart.year.branch],
+    ["月支", chart.month.branch],
+    ["日支", chart.day.branch],
+    ["時支", chart.hour.branch],
+    ["大運支", luck.branch],
+    [`${ty}流年支`, transit[1]]
+  ].map(([label, br])=>{
+    const stemsText = hiddenStemsMap[br].map(([st, role])=>{
+      return `${role}:${st}${stemInfo[st].element}${stemInfo[st].polarity}(${getTenGod(dayStem, st)})`;
+    }).join("、");
+    return `- ${label} ${br}：${stemsText}`;
+  }).join("\n");
+
+  const branchItems = six.map(p=>({label:p.label, branch:p.branch}));
+  const rels = getBranchRelations(branchItems);
+  const relationText = rels.length
+    ? rels.map(r=>`- ${r.text}`).join("\n")
+    : "- 未見明顯合沖刑害";
+
+  const meetingText = [...meetingSets, ...trineSets].map(set=>{
+    const r = evaluateSet(set, branchItems);
+    if(r.count < 2) return null;
+    return `- ${set.type}：已見 ${r.present.join("、")}；缺 ${r.missing.length?r.missing.join("、"):"無"}；${r.complete?"成局":"有象未全"}`;
+  }).filter(Boolean).join("\n") || "- 未見明顯三會／三合／半合";
+
+  const luckText = `第${luck.order || "?"}步大運：${luck.pillar}（${luck.stem}${stemInfo[luck.stem].element} / ${luck.branch}${charElement(luck.branch)}）
+- 起迄：${luck.start ? fmtYM(luck.start) : "未定"}－${luck.end ? fmtYM(luck.end) : "未定"}
+- 年齡：約 ${luck.ageStart ?? "?"}－${luck.ageEnd ?? "?"} 歲
+- 方向：${luck.dir || "未定"}
+- 天干十神：${getTenGod(dayStem, luck.stem)}
+- 地支本氣十神：${getTenGod(dayStem, branchMainStem[luck.branch])}`;
+
+  const md = `# 八字命理 AI 分析提示詞
+
+你現在是一位精通《淵海子平》的八字命理大師。請根據我的出生資料、八字、大運、流年進行分析。請不要只給出籠統的解釋，我需要你分析我的「五行喜忌」，並指出我命局中最強的「十神」是什麼（如傷官、正財等），這如何影響了我的婚姻、健康、學業、性格與事業選擇？請用半文言半白話的風格回答。
+
+請注意：
+- 不要只講吉凶，要說明推論依據。
+- 請同時參考原局、大運、流年。
+- 若資料中有互相牽制，例如合中帶沖、旺中有洩，請明確指出。
+- 請分段回答：命局總論、五行喜忌、最強十神、婚姻、健康、學業、性格、事業、大運流年建議。
+- 請避免過度絕對化，請以「傾向」、「需注意」、「較有利」等語氣表達。
+
+---
+
+# 一、基本出生資料
+
+- 性別：${gender}
+- 出生時間：${birthText}
+- 子時換日設定：${chart.input.zi === "late" ? "晚子時 23:00 後換日" : "不使用晚子時換日"}
+- 指定分析流年：${ty} 年
+- 流年干支：${transit}
+
+---
+
+# 二、四柱八字
+
+| 柱 | 天干 | 地支 | 干支 |
+|---|---|---|---|
+| 年柱 | ${chart.year.stem}（${stemInfo[chart.year.stem].element}${stemInfo[chart.year.stem].polarity}） | ${chart.year.branch}（${charElement(chart.year.branch)}） | ${chart.year.pillar} |
+| 月柱 | ${chart.month.stem}（${stemInfo[chart.month.stem].element}${stemInfo[chart.month.stem].polarity}） | ${chart.month.branch}（${charElement(chart.month.branch)}） | ${chart.month.pillar} |
+| 日柱 | ${chart.day.stem}（${stemInfo[chart.day.stem].element}${stemInfo[chart.day.stem].polarity}） | ${chart.day.branch}（${charElement(chart.day.branch)}） | ${chart.day.pillar} |
+| 時柱 | ${chart.hour.stem}（${stemInfo[chart.hour.stem].element}${stemInfo[chart.hour.stem].polarity}） | ${chart.hour.branch}（${charElement(chart.hour.branch)}） | ${chart.hour.pillar} |
+
+- 日主：${dayStem}${dayElement}${stemInfo[dayStem].polarity}
+- 月令：${monthBranch}月
+- 日主在月令旺衰：${strengthWord(dayScore)}
+
+---
+
+# 三、十神關係
+
+| 位置 | 對象 | 十神 |
+|---|---|---|
+| 年干 | ${chart.year.stem} | ${getTenGod(dayStem, chart.year.stem)} |
+| 年支本氣 | ${branchMainStem[chart.year.branch]} | ${getTenGod(dayStem, branchMainStem[chart.year.branch])} |
+| 月干 | ${chart.month.stem} | ${getTenGod(dayStem, chart.month.stem)} |
+| 月支本氣 | ${branchMainStem[chart.month.branch]} | ${getTenGod(dayStem, branchMainStem[chart.month.branch])} |
+| 日干 | ${chart.day.stem} | 日主 |
+| 日支本氣 | ${branchMainStem[chart.day.branch]} | ${getTenGod(dayStem, branchMainStem[chart.day.branch])} |
+| 時干 | ${chart.hour.stem} | ${getTenGod(dayStem, chart.hour.stem)} |
+| 時支本氣 | ${branchMainStem[chart.hour.branch]} | ${getTenGod(dayStem, branchMainStem[chart.hour.branch])} |
+
+---
+
+# 四、地支藏干
+
+${hiddenRows}
+
+---
+
+# 五、指定流年所屬大運
+
+${luckText}
+
+---
+
+# 六、流年資料
+
+- 流年：${ty} 年
+- 流年干支：${transit}
+- 流年天干十神：${getTenGod(dayStem, transit[0])}
+- 流年地支本氣：${branchMainStem[transit[1]]}
+- 流年地支本氣十神：${getTenGod(dayStem, branchMainStem[transit[1]])}
+
+---
+
+# 七、六柱十二字整合資料
+
+六柱包含：
+
+1. 年柱：${chart.year.pillar}
+2. 月柱：${chart.month.pillar}
+3. 日柱：${chart.day.pillar}
+4. 時柱：${chart.hour.pillar}
+5. 大運：${luck.pillar}
+6. 流年：${transit}
+
+## 十二字五行統計
+
+| 五行 | 數量 |
+|---|---:|
+| 木 | ${elementCounts.木} |
+| 火 | ${elementCounts.火} |
+| 土 | ${elementCounts.土} |
+| 金 | ${elementCounts.金} |
+| 水 | ${elementCounts.水} |
+
+## 對日主的生剋同耗統計
+
+| 關係 | 數量 |
+|---|---:|
+| 同我 | ${relationCounts.同我} |
+| 我生 | ${relationCounts.我生} |
+| 我剋 | ${relationCounts.我剋} |
+| 剋我 | ${relationCounts.剋我} |
+| 生我 | ${relationCounts.生我} |
+
+---
+
+# 八、合會沖刑害
+
+## 三會 / 三合 / 半合
+
+${meetingText}
+
+## 合沖刑害
+
+${relationText}
+
+---
+
+# 九、請 AI 分析時務必回答
+
+請根據以上資料，回答：
+
+1. 此命局日主強弱如何？五行喜忌為何？
+2. 命局中最強的十神是什麼？是因為透干、通根、月令、藏干，還是大運流年引動？
+3. 此十神如何影響：
+   - 性格
+   - 學業
+   - 事業
+   - 婚姻
+   - 健康
+4. 指定流年 ${ty} 年與當下大運如何互動？
+5. 是否有三會、三合、半合、六合、沖、刑、害？它們如何影響五行喜忌？
+6. 此年適合主動進取、守成、學習、轉職、感情經營，或健康調養？
+7. 請用半文言半白話風格輸出。
+
+`;
+
+  return md;
+}
+
+function downloadPromptMarkdown(){
+  if(!chart) calculate();
+  if(typeof updateCombinationPage === "function") updateCombinationPage();
+
+  const md = buildPromptMarkdown();
+  const blob = new Blob([md], {type:"text/markdown;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  const y = chart.input.y;
+  const m = pad(chart.input.m);
+  const d = pad(chart.input.d);
+  const ty = +document.getElementById("comboTransitYear")?.value || +document.getElementById("transitYear")?.value || new Date().getFullYear();
+
+  a.href = url;
+  a.download = `八字AI分析提示詞_${y}${m}${d}_流年${ty}.md`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+calculate();
+</script>
+</body>
+</html>

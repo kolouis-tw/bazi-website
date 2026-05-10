@@ -1,0 +1,14 @@
+{
+  "case_name": "1974 female 2026 transit",
+  "birth": {
+    "year": 1974,
+    "month": 10,
+    "day": 3,
+    "hour": 4,
+    "minute": 0,
+    "gender": "female"
+  },
+  "transit_year": 2026,
+  "expected_luck_for_six_pillars": "戊辰",
+  "expected_note": "六柱十二字整合分析的大運需與大運試算同步"
+}

@@ -1,0 +1,45 @@
+{
+  "project_name": "四柱八字十神排盤系統",
+  "package": "FINAL_AGENT_PACKAGE",
+  "entry": "index.html",
+  "version": "final_engineering_management_package",
+  "copyright": "威科國際股份有限公司",
+  "features": [
+    "四柱排盤",
+    "十神分析",
+    "藏干",
+    "旺衰",
+    "透干",
+    "通根",
+    "合沖刑害",
+    "三會局",
+    "三合局",
+    "半合局",
+    "六柱十二字整合分析",
+    "流年自動切換對應大運",
+    "九步大運",
+    "大運年齡區間",
+    "AI分析Markdown下載",
+    "A4列印"
+  ],
+  "critical_regression_cases": [
+    "2024/03/10 00:20 => 甲辰 丁卯 癸酉 壬子",
+    "1974/10/03 04:00 女命 2026流年 => 六柱大運需為戊辰"
+  ],
+  "files": [
+    "index.html",
+    "README.md",
+    "agent_notes.md",
+    "docs_algorithm.md",
+    "docs_overview.md",
+    "SMOKE_TEST.md",
+    "PACKAGE_TREE.txt",
+    "manifest.json",
+    "docs/regression_cases.md",
+    "changelog/v1_initial.md",
+    "changelog/v2_luck_sync_fix.md",
+    "changelog/v3_final_engineering_package.md",
+    "examples/sample_prompt_output.md",
+    "examples/sample_chart.json"
+  ]
+}
