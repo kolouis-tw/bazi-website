@@ -98,7 +98,7 @@ npm run site -- add-page --slug my-tool --title "我的新工具" --description 
 
 腳本與說明位於 `scripts/site-workflow/`。新增的一般次頁會放在 `pages/<slug>.html`，首頁入口按鈕由 `scripts/site-workflow/site-pages.json` 管理。既有 `bazi.html` 保留在根目錄，以維持 `https://louisko.com/bazi.html` 連結不變。
 
-首頁通行碼彈窗是前端入口提示，密碼會存在 HTML 中，不等同正式安全驗證。若未來要放入私密資料，應改成伺服器端登入、Session 或其他正式權限控管。
+首頁通行碼彈窗是前端入口提示，密碼會存在 HTML 中，不等同正式安全驗證。若未來要放入私密資料，應改成伺服器端登入、Session 或其他正式權限控管。除非使用者明確要求，不要把這類提示詞、說明提醒、使用說明、安全提醒或教學文字放在公開頁面上。
 
 ## 目前功能
 

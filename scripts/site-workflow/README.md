@@ -80,4 +80,5 @@ node scripts/site-workflow/manage-site.mjs publish --message "Update Louisko pag
 - 腳本不會覆蓋已存在的 `pages/<slug>.html`。
 - Zeabur token 只會從 `/Users/kolouis/.codex/config.toml` 讀取，不會寫入 repository。
 - `publish` 只會加入網站與文件相關檔案，不會批次加入整個工作區。
-- 首頁通行碼彈窗只是前端提示，不是正式安全驗證。
+- 除非使用者明確要求，不要把提示詞、說明提醒、使用說明、安全提醒或教學文字放到公開頁面上。
+- 首頁通行碼彈窗只是前端提示，不是正式安全驗證；此類提醒只記錄於文件，不顯示在頁面上。
