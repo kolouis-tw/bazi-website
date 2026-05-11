@@ -2,6 +2,10 @@
   "project_name": "四柱八字十神排盤系統",
   "package": "FINAL_AGENT_PACKAGE",
   "entry": "index.html",
+  "app_pages": {
+    "home": "index.html",
+    "bazi": "bazi.html"
+  },
   "version": "final_engineering_management_package",
   "copyright": "威科國際股份有限公司",
   "features": [
@@ -28,13 +32,19 @@
   ],
   "files": [
     "index.html",
+    "bazi.html",
+    "Dockerfile",
+    ".dockerignore",
     "README.md",
+    "AGENTS.md",
     "agent_notes.md",
     "docs_algorithm.md",
     "docs_overview.md",
     "SMOKE_TEST.md",
     "PACKAGE_TREE.txt",
     "manifest.json",
+    "package.json",
+    "server.js",
     "docs/regression_cases.md",
     "changelog/v1_initial.md",
     "changelog/v2_luck_sync_fix.md",
