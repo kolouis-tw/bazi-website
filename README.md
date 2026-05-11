@@ -1,6 +1,6 @@
 # 四柱八字十神排盤系統
 
-這是一個 Louisko.com 首頁與子頁工具包。`index.html` 是首頁入口，`bazi.html` 是四柱八字十神排盤系統子頁。目前版本已整理成可交給 Codex / Cursor / Claude Code / Gemini Code Assist / 其他 AI Agent 接手的工程包。
+這是一個 Louisko.com 首頁與子頁工具包。`index.html` 是無印良品風格的私人入口首頁，`bazi.html` 是四柱八字十神排盤系統子頁。目前版本已整理成可交給 Codex / Cursor / Claude Code / Gemini Code Assist / 其他 AI Agent 接手的工程包。
 
 ## 線上網站
 
@@ -58,6 +58,8 @@ EXPOSE 80
 index.html
 ```
 
+目前首頁入口包含 `八字排盤`、`ERP`、`AI 工具`、`設計案`、`攝影集`、`文件庫`。除 `bazi.html` 是正式工具頁外，其餘先建立在 `pages/` 作為預留次頁，避免入口出現 404。
+
 八字十神排盤系統：
 
 ```text
@@ -75,6 +77,28 @@ npm start
 ```sh
 PORT=3000 npm start
 ```
+
+## 新增首頁入口與次頁
+
+之後若要把 `louisko.com` 當主頁，並持續新增其他次頁，請優先使用共用腳本：
+
+```sh
+node scripts/site-workflow/manage-site.mjs add-page --slug my-tool --title "我的新工具" --description "這裡放新工具的簡短說明。"
+node scripts/site-workflow/manage-site.mjs verify
+node scripts/site-workflow/manage-site.mjs publish --message "Add my tool page" --zeabur
+```
+
+若 shell 有載入 npm，也可用 npm 簡寫；若 `npm` 不在 PATH，請使用上面的 `node ...` 指令，或改用 `/Users/kolouis/Desktop/AI_八字/.tools/bin/npm`：
+
+```sh
+npm run site:list
+npm run site:verify
+npm run site -- add-page --slug my-tool --title "我的新工具" --description "這裡放新工具的簡短說明。"
+```
+
+腳本與說明位於 `scripts/site-workflow/`。新增的一般次頁會放在 `pages/<slug>.html`，首頁入口按鈕由 `scripts/site-workflow/site-pages.json` 管理。既有 `bazi.html` 保留在根目錄，以維持 `https://louisko.com/bazi.html` 連結不變。
+
+首頁通行碼彈窗是前端入口提示，密碼會存在 HTML 中，不等同正式安全驗證。若未來要放入私密資料，應改成伺服器端登入、Session 或其他正式權限控管。
 
 ## 目前功能
 
@@ -98,6 +122,7 @@ PORT=3000 npm start
 ```text
 index.html
 bazi.html
+pages/
 Dockerfile
 README.md
 AGENTS.md

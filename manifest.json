@@ -4,7 +4,18 @@
   "entry": "index.html",
   "app_pages": {
     "home": "index.html",
-    "bazi": "bazi.html"
+    "bazi": "bazi.html",
+    "future_pages": "pages/<slug>.html",
+    "erp": "pages/erp.html",
+    "ai": "pages/ai.html",
+    "design": "pages/design.html",
+    "photo": "pages/photo.html",
+    "docs": "pages/docs.html"
+  },
+  "site_workflow": {
+    "script": "scripts/site-workflow/manage-site.mjs",
+    "cards_config": "scripts/site-workflow/site-pages.json",
+    "docs": "scripts/site-workflow/README.md"
   },
   "version": "final_engineering_management_package",
   "copyright": "威科國際股份有限公司",
@@ -33,6 +44,11 @@
   "files": [
     "index.html",
     "bazi.html",
+    "pages/erp.html",
+    "pages/ai.html",
+    "pages/design.html",
+    "pages/photo.html",
+    "pages/docs.html",
     "Dockerfile",
     ".dockerignore",
     "README.md",
@@ -45,6 +61,9 @@
     "manifest.json",
     "package.json",
     "server.js",
+    "scripts/site-workflow/README.md",
+    "scripts/site-workflow/manage-site.mjs",
+    "scripts/site-workflow/site-pages.json",
     "docs/regression_cases.md",
     "changelog/v1_initial.md",
     "changelog/v2_luck_sync_fix.md",

@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "site": "node scripts/site-workflow/manage-site.mjs",
+    "site:list": "node scripts/site-workflow/manage-site.mjs list",
+    "site:verify": "node scripts/site-workflow/manage-site.mjs verify"
   },
   "engines": {
     "node": ">=18"

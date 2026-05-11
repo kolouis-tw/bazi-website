@@ -1,0 +1,47 @@
+{
+  "cards": [
+    {
+      "slug": "bazi",
+      "title": "八字排盤",
+      "description": "四柱八字十神排盤系統。",
+      "href": "bazi.html",
+      "code": "000000",
+      "primary": true
+    },
+    {
+      "slug": "erp",
+      "title": "ERP",
+      "description": "ERP 與營運管理入口。",
+      "href": "pages/erp.html",
+      "code": "000000"
+    },
+    {
+      "slug": "ai",
+      "title": "AI 工具",
+      "description": "AI 工作流程與工具入口。",
+      "href": "pages/ai.html",
+      "code": "000000"
+    },
+    {
+      "slug": "design",
+      "title": "設計案",
+      "description": "設計、品牌與版面專案入口。",
+      "href": "pages/design.html",
+      "code": "000000"
+    },
+    {
+      "slug": "photo",
+      "title": "攝影集",
+      "description": "照片與影像作品入口。",
+      "href": "pages/photo.html",
+      "code": "000000"
+    },
+    {
+      "slug": "docs",
+      "title": "文件庫",
+      "description": "文件與資料索引入口。",
+      "href": "pages/docs.html",
+      "code": "000000"
+    }
+  ]
+}
