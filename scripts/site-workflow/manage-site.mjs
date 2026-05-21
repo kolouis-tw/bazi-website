@@ -246,7 +246,7 @@ function verify() {
 function deployZeabur() {
   const zshCommand = [
     'ZEABUR_TOKEN=$(awk -F "ZEABUR_TOKEN = " \'/ZEABUR_TOKEN/ {gsub(/[\\\"{}, ]/,"",$2); print $2; exit}\' /Users/kolouis/.codex/config.toml)',
-    '/Users/kolouis/Desktop/AI_八字/.tools/bin/npx -y zeabur@latest deploy --project-id 6a008755e6a21fff4d962fee --service-id 6a0088674a961c814e9ee899 --environment-id 6a008755e5ed304c1d845a06 --interactive=false --json'
+    '/Users/kolouis/Desktop/AI_Codex/AI_八字/.tools/bin/npx -y zeabur@latest deploy --project-id 6a008755e6a21fff4d962fee --service-id 6a0088674a961c814e9ee899 --environment-id 6a008755e5ed304c1d845a06 --interactive=false --json'
   ].join(" ");
   run("/bin/zsh", ["-lc", zshCommand]);
 }

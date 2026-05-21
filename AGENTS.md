@@ -4,6 +4,8 @@
 
 本資料夾是 `louisko.com` 主網站專案。首頁、部署設定與主站工作流屬於根目錄；各子頁或子工具放在 `apps/` 內。
 
+本機整併後位於 `AI_Codex/AI_Web/01_Louisko_Website_目前站台/Louisko_Website`；後續若要開發未來主版本，優先查看 `AI_Web/02_louisko.com_未來開發專案/louisko.com_未來開發專案`。
+
 請以「低干擾、可回溯、主站與子專案分工清楚」為優先。
 
 ## 重要入口
@@ -22,9 +24,9 @@
 - Custom domain: `https://louisko.com/`
 - 八字排盤新路徑: `https://louisko.com/apps/bazi/`
 - 八字排盤舊相容路徑: `https://louisko.com/bazi.html`
-- GitHub Pages: `https://kolouis-tw.github.io/bazi-website/`
+- GitHub Pages: `https://kolouis-tw.github.io/louisko-website/`
 - Zeabur generated domain: `https://bazi-ko.zeabur.app/`
-- GitHub repository: `https://github.com/kolouis-tw/bazi-website`
+- GitHub repository: `https://github.com/kolouis-tw/louisko-website`
 
 Zeabur 使用 Dockerfile：
 

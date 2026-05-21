@@ -19,7 +19,7 @@
   },
   "deployment": {
     "custom_domain": "https://louisko.com/",
-    "github_pages": "https://kolouis-tw.github.io/bazi-website/",
+    "github_pages": "https://kolouis-tw.github.io/louisko-website/",
     "zeabur_generated_domain": "https://bazi-ko.zeabur.app/",
     "zeabur_project_id": "6a008755e6a21fff4d962fee",
     "zeabur_service_id": "6a0088674a961c814e9ee899",

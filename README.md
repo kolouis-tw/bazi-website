@@ -2,14 +2,16 @@
 
 這是 `louisko.com` 的主網站專案。`index.html` 是首頁，`apps/` 內放各個子頁與子專案。
 
+本機整併後位於 `AI_Codex/AI_Web/01_Louisko_Website_目前站台/Louisko_Website`；未來主專案候選位於 `AI_Web/02_louisko.com_未來開發專案/louisko.com_未來開發專案`。
+
 ## 線上網站
 
 - Custom domain: https://louisko.com/
 - 八字排盤正式新路徑: https://louisko.com/apps/bazi/
 - 八字排盤舊相容路徑: https://louisko.com/bazi.html
-- GitHub Pages: https://kolouis-tw.github.io/bazi-website/
+- GitHub Pages: https://kolouis-tw.github.io/louisko-website/
 - Zeabur generated domain: https://bazi-ko.zeabur.app/
-- GitHub repository: https://github.com/kolouis-tw/bazi-website
+- GitHub repository: https://github.com/kolouis-tw/louisko-website
 
 ## 專案結構
 
@@ -96,8 +98,8 @@ EXPOSE 80
 部署目標：
 
 ```text
-Project: bazi-website
-Service: bazi-website
+Project: louisko-website
+Service: louisko-website
 Server: Tencent Tokyo 2C 2GB
 Custom domain: louisko.com
 Public port: HTTP:80
