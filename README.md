@@ -56,6 +56,16 @@ manifest.json
 - 根目錄 `bazi.html` 只作為舊網址相容入口，會導向 `apps/bazi/`。
 - 主站腳本放在 `scripts/site-workflow/`，不要放進單一子專案資料夾。
 
+## 三資料夾連動
+
+若有 louisko.com 站台、八字頁、排盤引擎、規格、樣板、測試或部署相關更新，務必同步檢查並視需要連動更新：
+
+- `01_Louisko_Website_目前站台/Louisko_Website`
+- `02_louisko.com_未來開發專案/louisko.com_未來開發專案`
+- `03_bazi-engine-ts/bazi-engine-ts`
+
+若只更新其中一處，需記錄或說明沒有同步其他處的原因。
+
 ## 新增子頁
 
 優先使用共用腳本：

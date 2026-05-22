@@ -72,6 +72,16 @@ node scripts/site-workflow/manage-site.mjs publish --message "Update Louisko pag
 
 請不要手動刪除這兩個 marker，否則腳本無法更新首頁入口。
 
+## 三資料夾連動
+
+若有 louisko.com 站台、八字頁、排盤引擎、規格、樣板、測試或部署相關更新，務必同步檢查並視需要連動更新：
+
+- `01_Louisko_Website_目前站台/Louisko_Website`
+- `02_louisko.com_未來開發專案/louisko.com_未來開發專案`
+- `03_bazi-engine-ts/bazi-engine-ts`
+
+若只更新其中一處，需記錄或說明沒有同步其他處的原因。
+
 ## 安全與頁面規則
 
 - 腳本不會覆蓋已存在的 `apps/<slug>/index.html`。
