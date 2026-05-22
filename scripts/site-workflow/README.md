@@ -8,6 +8,11 @@
 node scripts/site-workflow/manage-site.mjs
 ```
 
+## 流程與紀錄文件
+
+- `WEB_CHANGE_DEPLOYMENT_WORKFLOW.md`：記錄每次網頁變更、GitHub 同步與 Zeabur 部署的標準流程，以及各步驟的作用。
+- `WEB_CHANGE_LOG.md`：每次修改、commit、push、deploy 與線上驗證後都要補一筆紀錄。
+
 ## 常用流程
 
 列出首頁目前入口：
