@@ -14,7 +14,7 @@ louisko.com 的照片處理次頁工具，預期路徑：
 - HEIC / HEIF 後端轉 JPG。
 - 前端 Canvas resize、compress、EXIF 資訊列與 Louis Logo 浮水印。
 - IndexedDB 本地相簿儲存。
-- 本機縮圖與雲端縮圖顯示。
+- 本機與雲端都只保存單一成品 JPG。
 - 相簿內 Lightbox 預覽、左右切換、旋轉、重設、刪除與 ZIP 下載。
 - 上傳完成後自動開啟相簿詳情，直接進入後製操作。
 - 相簿詳情可將目前相簿同步到後端雲端保留區。
@@ -26,8 +26,8 @@ louisko.com 的照片處理次頁工具，預期路徑：
 - Logo 輸出尺寸：上限 72px。
 - EXIF 主行字級：28px。
 - EXIF 日期字級：20px。
-- 本機輸出 JPEG quality：86。
-- 本機縮圖長邊上限：480px。
+- 本機輸出目標：單一成品 JPG 小於 600KB。
+- R2 雲端保存：單一成品 JPG，不另存縮圖。
 - 文字過長時會自動截斷，不超出畫布。
 
 ## iPhone 上傳
@@ -86,8 +86,7 @@ _storage/photo-cloud
 
 正式 R2 模式會保存：
 
-- 大圖 JPEG：長邊上限 2048px，quality 86。
-- 縮圖 JPEG：長邊上限 480px，quality 78。
+- 單一成品 JPEG：已含浮水印，目標小於 600KB。
 - 相簿 metadata：`_metadata/photo-cloud.json`。
 
 電腦與手機同步方式：
@@ -95,7 +94,7 @@ _storage/photo-cloud
 1. 在任一裝置建立相簿並上傳照片。
 2. 進入相簿後按「同步雲端」。
 3. 另一台裝置開啟 Photo 頁，按「讀取雲端」。
-4. 已同步的相簿與縮圖會出現在該裝置瀏覽器。
+4. 已同步的相簿與成品 JPG 會出現在該裝置瀏覽器。
 
 ## Cloudflare R2 設定
 
@@ -124,7 +123,7 @@ R2_PUBLIC_BASE_URL=https://media.louisko.com
 - 正式頁：`https://louisko.com/apps/photo/`
 - 正式 API：`https://louisko.com/api/photo-cloud/albums`
 - 備援 generated domain：`https://louisko-node-photo.zeabur.app/`
-- 已驗證 API 可建立相簿、上傳測試 JPG、後端 resize 成長邊 2048px JPEG，並存入 R2。
+- 已驗證 API 可建立相簿、上傳測試 JPG、後端壓縮為單一成品 JPEG，並存入 R2。
 - `louisko.com` 已從舊 `bazi-website` 靜態 service 移到 Node service，Photo cloud API 會在 `louisko.com/api/photo-cloud/albums` 回應。
 
 已確認：
@@ -133,6 +132,7 @@ R2_PUBLIC_BASE_URL=https://media.louisko.com
 2. `https://louisko.com/apps/photo/` 回 `200`。
 3. `https://louisko.com/api/photo-cloud/albums` 回 JSON `200`。
 4. R2 圖片公開 URL 可被瀏覽器讀取。
+5. 刪除相簿 / 照片時，API 會同步刪除 R2 object 與 metadata。
 
 請注意：
 

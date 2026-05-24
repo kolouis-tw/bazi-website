@@ -36,11 +36,12 @@ HEIC / HEIF 檔案會透過同一個 Node / Express 服務的 `POST /api/convert
 
 相簿詳情頁提供「同步雲端」流程。同步時會把已處理照片上傳到後端，後端再轉成網頁適合版本：
 
-- 大圖長邊上限 2048px，JPEG quality 86。
-- 縮圖長邊上限 480px，JPEG quality 78。
+- 單一成品 JPG，已含 EXIF 資訊列與 Louis Logo 浮水印。
+- 前端先壓縮到小於 600KB；後端再確認一次，確保 R2 最終檔案小於 600KB。
+- 後端長邊上限 1800px，必要時會降低 JPEG quality 與尺寸。
 - 本機開發保存位置：`_storage/photo-cloud`。
 
-`_storage/` 已排除在 Git 與 Docker image 外。正式上線使用 Cloudflare R2，不建議依賴 Zeabur container disk 長期保存照片。
+`_storage/` 已排除在 Git 與 Docker image 外。正式上線使用 Cloudflare R2，不建議依賴 Zeabur container disk 長期保存照片。Cloudflare R2 只保存單一成品 JPG，不再另外建立縮圖檔。
 
 Cloudflare R2 可用下列環境變數啟用：
 

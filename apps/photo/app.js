@@ -1,7 +1,8 @@
 const DB_NAME = "LouisImageProcessorAlbumsDB";
 const DB_VERSION = 1;
-const MAX_EDGE = 2048;
+const MAX_EDGE = 1800;
 const JPEG_QUALITY = 0.86;
+const WEB_PHOTO_MAX_BYTES = 600 * 1024;
 const MAX_SELECTED = 10;
 const COPYRIGHT_TEXT = "© Louis Photography | All Rights Reserved";
 const INFO_BAR_MIN_HEIGHT = 118;
@@ -238,12 +239,15 @@ async function renderAlbumGrid() {
 async function deleteAlbum(albumId) {
   const album = state.albums.find((item) => item.id === albumId);
   if (!album || !confirm(`刪除相簿「${album.name}」與其中照片？`)) return;
+  setCloudStatus("刪除雲端相簿中...");
+  await deleteCloudAlbum(albumId);
   const photos = await getPhotosByAlbum(albumId);
   await Promise.all(photos.map((photo) => deleteRecord("photos", photo.id)));
   await deleteRecord("albums", albumId);
   if (state.currentAlbumId === albumId) state.currentAlbumId = null;
   await ensureDefaultAlbum();
   await refreshAlbums();
+  setCloudStatus("相簿已刪除，雲端檔案也已同步移除。");
 }
 
 async function handleFiles(files) {
@@ -263,7 +267,6 @@ async function handleFiles(files) {
       const exifData = normalizeExif(originalExif);
       if (convertedFromHeic) exifData.Orientation = 1;
       const outputBlob = await processImage(normalizedFile, exifData);
-      const thumbnailBlob = await createThumbnailBlob(outputBlob);
       const now = new Date().toISOString();
       await putRecord("photos", {
         id: crypto.randomUUID(),
@@ -272,10 +275,8 @@ async function handleFiles(files) {
         outputName: outputNameFor(file.name),
         blob: outputBlob,
         originalBlob: outputBlob,
-        thumbnailBlob,
         originalSizeBytes: file.size,
         processedSizeBytes: outputBlob.size,
-        thumbnailSizeBytes: thumbnailBlob.size,
         exifData,
         createdAt: now,
         updatedAt: now,
@@ -358,8 +359,11 @@ async function fetchCloud(path, options = {}) {
   let lastNetworkError = null;
   let lastResponse = null;
   for (const url of urls) {
+    const { timeoutMs, ...fetchOptions } = options;
+    const controller = timeoutMs ? new AbortController() : null;
+    const timer = timeoutMs ? setTimeout(() => controller.abort(), timeoutMs) : null;
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(url, controller ? { ...fetchOptions, signal: controller.signal } : fetchOptions);
       if (shouldTryNextApi(response)) {
         lastResponse = response;
         continue;
@@ -367,6 +371,8 @@ async function fetchCloud(path, options = {}) {
       return response;
     } catch (error) {
       lastNetworkError = error;
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
   if (lastResponse) return lastResponse;
@@ -458,19 +464,7 @@ async function processImage(file, exifData) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(oriented, 0, 0, imageWidth, imageHeight);
   drawInfoBar(ctx, canvas.width, imageHeight, infoHeight, exifData);
-  return canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
-}
-
-async function createThumbnailBlob(blob) {
-  const image = await loadImage(URL.createObjectURL(blob));
-  const maxEdge = 480;
-  const scale = Math.min(1, maxEdge / Math.max(image.width, image.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(image.width * scale));
-  canvas.height = Math.max(1, Math.round(image.height * scale));
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-  return canvasToBlob(canvas, "image/jpeg", 0.78);
+  return canvasToBlobUnderLimit(canvas, WEB_PHOTO_MAX_BYTES);
 }
 
 function drawOrientedImage(image, orientation) {
@@ -640,9 +634,7 @@ async function rotateSelected(degrees) {
   for (const photo of selected) {
     if (!photo.blob) continue;
     photo.blob = await rotateBlob(photo.blob, degrees);
-    photo.thumbnailBlob = await createThumbnailBlob(photo.blob);
     photo.processedSizeBytes = photo.blob.size;
-    photo.thumbnailSizeBytes = photo.thumbnailBlob.size;
     photo.updatedAt = new Date().toISOString();
     photo.transformHistory = [...(photo.transformHistory || []), degrees > 0 ? "rotate-right" : "rotate-left"];
     photo.cloudSyncedAt = "";
@@ -656,9 +648,7 @@ async function resetSelected() {
   for (const photo of selected) {
     if (!photo.originalBlob) continue;
     photo.blob = photo.originalBlob;
-    photo.thumbnailBlob = await createThumbnailBlob(photo.blob);
     photo.processedSizeBytes = photo.blob.size;
-    photo.thumbnailSizeBytes = photo.thumbnailBlob.size;
     photo.updatedAt = new Date().toISOString();
     photo.transformHistory = [];
     photo.cloudSyncedAt = "";
@@ -669,9 +659,12 @@ async function resetSelected() {
 
 async function deleteSelectedPhotos() {
   if (!state.selectedPhotoIds.size || !confirm(`刪除 ${state.selectedPhotoIds.size} 張照片？`)) return;
+  setCloudStatus("刪除雲端照片中...");
+  for (const id of state.selectedPhotoIds) await deleteCloudPhoto(state.detailAlbumId, id);
   await Promise.all([...state.selectedPhotoIds].map((id) => deleteRecord("photos", id)));
   await openAlbum(state.detailAlbumId);
   await refreshAlbums();
+  setCloudStatus("已刪除選取照片，雲端檔案也已同步移除。");
 }
 
 async function downloadSelected() {
@@ -693,7 +686,10 @@ async function downloadSelected() {
 async function syncCurrentAlbumToCloud() {
   if (!state.detailAlbumId || !state.detailPhotos.length) return;
   const album = state.albums.find((item) => item.id === state.detailAlbumId);
-  const uploadablePhotos = state.detailPhotos.filter((photo) => photo.blob);
+  const uploadablePhotos = state.detailPhotos.filter((photo) => (
+    photo.blob &&
+    (!photo.cloudSyncedAt || photo.thumbnailUrl || (photo.cloudSizeBytes || photo.processedSizeBytes || 0) > WEB_PHOTO_MAX_BYTES)
+  ));
   setCloudStatus("建立雲端相簿中...");
   try {
     const albumResponse = await fetchCloud("/api/photo-cloud/albums", {
@@ -707,38 +703,68 @@ async function syncCurrentAlbumToCloud() {
     if (!uploadablePhotos.length) {
       await pullCloudLibrary({ silent: true });
       await openAlbum(state.detailAlbumId);
-      return setCloudStatus("此相簿目前只有雲端照片，已更新雲端相簿清單。");
+      return setCloudStatus("此相簿沒有新的本機照片要同步，已更新雲端相簿清單。");
     }
+    const failed = [];
     for (const photo of uploadablePhotos) {
       done += 1;
-      setCloudStatus(`同步雲端中：${done} / ${uploadablePhotos.length}`);
-      const formData = new FormData();
-      formData.append("photoId", photo.id);
-      formData.append("originalName", photo.originalName);
-      formData.append("outputName", photo.outputName);
-      formData.append("metadata", JSON.stringify({ exifData: photo.exifData, transformHistory: photo.transformHistory || [] }));
-      formData.append("file", photo.blob, photo.outputName);
-      const response = await fetchCloud(`/api/photo-cloud/albums/${encodeURIComponent(state.detailAlbumId)}/photos`, {
-        method: "POST",
-        body: formData,
-      });
-      if (!response.ok) {
-        throw new Error(await cloudResponseError(response, `${photo.originalName} 同步失敗`));
+      setCloudStatus(`同步雲端中：${done} / ${uploadablePhotos.length}（${formatBytes(photo.blob.size)}）`);
+      try {
+        const formData = new FormData();
+        formData.append("photoId", photo.id);
+        formData.append("originalName", photo.originalName);
+        formData.append("outputName", photo.outputName);
+        formData.append("metadata", JSON.stringify({ exifData: photo.exifData, transformHistory: photo.transformHistory || [] }));
+        formData.append("file", photo.blob, photo.outputName);
+        const response = await fetchCloud(`/api/photo-cloud/albums/${encodeURIComponent(state.detailAlbumId)}/photos`, {
+          method: "POST",
+          body: formData,
+          timeoutMs: 120000,
+        });
+        if (!response.ok) {
+          throw new Error(await cloudResponseError(response, `${photo.originalName} 同步失敗`));
+        }
+        const result = await response.json();
+        photo.cloudUrl = result.photo?.url || "";
+        photo.thumbnailUrl = "";
+        photo.cloudSizeBytes = result.photo?.sizeBytes || photo.blob.size;
+        photo.cloudSyncedAt = new Date().toISOString();
+        await putRecord("photos", photo);
+      } catch (error) {
+        console.warn(error);
+        failed.push(`${photo.originalName}: ${readableError(error)}`);
       }
-      const result = await response.json();
-      photo.cloudUrl = result.photo?.url || "";
-      photo.thumbnailUrl = result.photo?.thumbnailUrl || "";
-      photo.cloudSizeBytes = result.photo?.sizeBytes || 0;
-      photo.cloudSyncedAt = new Date().toISOString();
-      await putRecord("photos", photo);
     }
     await pullCloudLibrary({ silent: true });
     await openAlbum(state.detailAlbumId);
-    setCloudStatus(`已同步 ${uploadablePhotos.length} 張照片到雲端保留區，其他裝置可按「讀取雲端」載入。`);
+    const okCount = uploadablePhotos.length - failed.length;
+    setCloudStatus(failed.length
+      ? `已同步 ${okCount} 張，${failed.length} 張失敗：${failed.slice(0, 2).join("；")}`
+      : `已同步 ${okCount} 張照片到雲端保留區，其他裝置可按「讀取雲端」載入。`);
     renderPhotoGrid();
   } catch (error) {
     console.warn(error);
     setCloudStatus(`同步失敗：${readableError(error)}`);
+  }
+}
+
+async function deleteCloudAlbum(albumId) {
+  const response = await fetchCloud(`/api/photo-cloud/albums/${encodeURIComponent(albumId)}`, {
+    method: "DELETE",
+    timeoutMs: 120000,
+  });
+  if (!response.ok && response.status !== 404) {
+    throw new Error(await cloudResponseError(response, "雲端相簿刪除失敗"));
+  }
+}
+
+async function deleteCloudPhoto(albumId, photoId) {
+  const response = await fetchCloud(`/api/photo-cloud/albums/${encodeURIComponent(albumId)}/photos/${encodeURIComponent(photoId)}`, {
+    method: "DELETE",
+    timeoutMs: 120000,
+  });
+  if (!response.ok && response.status !== 404) {
+    throw new Error(await cloudResponseError(response, "雲端照片刪除失敗"));
   }
 }
 
@@ -805,12 +831,10 @@ async function mergeCloudPhoto(cloudPhoto) {
     transformHistory: existing?.transformHistory || cloudPhoto.metadata?.transformHistory || [],
     blob: existing?.blob,
     originalBlob: existing?.originalBlob,
-    thumbnailBlob: existing?.thumbnailBlob,
     originalSizeBytes: existing?.originalSizeBytes || 0,
     processedSizeBytes: existing?.processedSizeBytes || cloudPhoto.sizeBytes || 0,
-    thumbnailSizeBytes: existing?.thumbnailSizeBytes || 0,
     cloudUrl: cloudPhoto.url || existing?.cloudUrl || "",
-    thumbnailUrl: cloudPhoto.thumbnailUrl || existing?.thumbnailUrl || "",
+    thumbnailUrl: "",
     cloudSizeBytes: cloudPhoto.sizeBytes || existing?.cloudSizeBytes || 0,
     cloudWidth: cloudPhoto.width || existing?.cloudWidth || 0,
     cloudHeight: cloudPhoto.height || existing?.cloudHeight || 0,
@@ -854,7 +878,7 @@ async function rotateBlob(blob, degrees) {
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate((degrees * Math.PI) / 180);
   ctx.drawImage(image, -image.width / 2, -image.height / 2);
-  return canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
+  return canvasToBlobUnderLimit(canvas, WEB_PHOTO_MAX_BYTES);
 }
 
 function openLightbox(index) {
@@ -883,18 +907,15 @@ function updateLightbox() {
 }
 
 function photoImageSrc(photo, size = "thumb") {
-  if (size === "thumb" && photo.thumbnailBlob) return URL.createObjectURL(photo.thumbnailBlob);
-  if (size === "thumb" && photo.thumbnailUrl) return photo.thumbnailUrl;
   if (photo.blob) return URL.createObjectURL(photo.blob);
-  return photo.cloudUrl || photo.thumbnailUrl || "";
+  return photo.cloudUrl || "";
 }
 
 function photoSizeLabel(photo) {
   const parts = [];
   if (photo.originalSizeBytes) parts.push(`原檔 ${formatBytes(photo.originalSizeBytes)}`);
   const displaySize = photo.processedSizeBytes || photo.cloudSizeBytes || photo.blob?.size || 0;
-  if (displaySize) parts.push(`網頁版 ${formatBytes(displaySize)}`);
-  if (photo.thumbnailBlob || photo.thumbnailUrl) parts.push("有縮圖");
+  if (displaySize) parts.push(`成品 ${formatBytes(displaySize)}`);
   return parts.join(" / ") || "雲端照片";
 }
 
@@ -925,6 +946,29 @@ function canvasToBlob(canvas, type, quality) {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("圖片輸出失敗")), type, quality);
   });
+}
+
+async function canvasToBlobUnderLimit(sourceCanvas, maxBytes) {
+  let workingCanvas = sourceCanvas;
+  let lastBlob = null;
+  for (let scaleAttempt = 0; scaleAttempt < 8; scaleAttempt += 1) {
+    for (const quality of [JPEG_QUALITY, 0.82, 0.78, 0.74, 0.70, 0.66, 0.62, 0.58, 0.54]) {
+      const blob = await canvasToBlob(workingCanvas, "image/jpeg", quality);
+      lastBlob = blob;
+      if (blob.size <= maxBytes) return blob;
+    }
+    workingCanvas = scaleCanvas(workingCanvas, 0.86);
+  }
+  return lastBlob;
+}
+
+function scaleCanvas(sourceCanvas, ratio) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(sourceCanvas.width * ratio));
+  canvas.height = Math.max(1, Math.round(sourceCanvas.height * ratio));
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(sourceCanvas, 0, 0, canvas.width, canvas.height);
+  return canvas;
 }
 
 function outputNameFor(name) {

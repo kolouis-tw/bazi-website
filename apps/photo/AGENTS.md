@@ -75,9 +75,8 @@ Stores：
 
 - 本機開發保存到 `_storage/photo-cloud`。
 - `_storage/` 必須維持在 `.gitignore` 與 `.dockerignore`。
-- 後端會把同步照片轉為網頁適合尺寸：長邊上限 2048px，JPEG quality 86。
-- 後端會另外產生縮圖：長邊上限 480px，JPEG quality 78。
-- 前端本機相簿也需保存縮圖 Blob，列表與相簿封面優先顯示縮圖，不直接用大圖當縮圖。
+- 後端會把同步照片轉為單一網頁成品 JPG：已含浮水印，目標小於 600KB，長邊上限 1800px。
+- 前端本機相簿不再保存額外縮圖 Blob；列表與相簿封面直接使用同一張小於 600KB 的成品 JPG。
 - 前端需顯示原檔容量與網頁版容量，方便確認不是在保存原檔。
 - 正式上線不可長期依賴 Zeabur container disk，應使用 Cloudflare R2 或同級 object storage。
 - 不可把任何 R2 / S3 / Supabase key 寫進前端、README、AGENTS 或 commit message。
@@ -104,7 +103,9 @@ Stores：
 
 - `GET https://louisko.com/api/photo-cloud/albums` 回傳 JSON `200`。
 - `POST /api/photo-cloud/albums` 可建立相簿。
-- `POST /api/photo-cloud/albums/:albumId/photos` 可將測試 JPG resize 成長邊 2048px 的網頁版 JPEG 並寫入 R2。
+- `POST /api/photo-cloud/albums/:albumId/photos` 可將測試 JPG 壓成單一小於 600KB 的網頁版 JPEG 並寫入 R2。
+- `DELETE /api/photo-cloud/albums/:albumId` 會刪 metadata 及相簿內 R2 objects。
+- `DELETE /api/photo-cloud/albums/:albumId/photos/:photoId` 會刪單張 metadata 及 R2 object。
 - R2 公開圖片 URL 回 `200 image/jpeg`。
 - 前端需提供「讀取雲端」功能，將雲端相簿與照片 metadata 合併到本機 IndexedDB，使電腦與手機瀏覽器都可看到已同步相簿。
 

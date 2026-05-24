@@ -6,7 +6,7 @@ const cors = require("cors");
 const multer = require("multer");
 const sharp = require("sharp");
 const heicConvert = require("heic-convert");
-const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, DeleteObjectCommand, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -19,6 +19,8 @@ const r2Bucket = process.env.R2_BUCKET || "";
 const r2PublicBaseUrl = (process.env.R2_PUBLIC_BASE_URL || "").replace(/\/$/, "");
 const r2Client = createR2Client();
 const activeStorageProvider = storageProvider === "r2" && r2Client ? "r2" : "local";
+const webPhotoMaxBytes = 600 * 1024;
+const webPhotoMaxEdge = 1800;
 
 app.disable("x-powered-by");
 app.use(cors());
@@ -112,6 +114,34 @@ app.get("/api/photo-cloud/albums/:albumId/photos", async (req, res) => {
   res.json({ ok: true, photos: db.photos.filter((photo) => photo.albumId === albumId) });
 });
 
+app.delete("/api/photo-cloud/albums/:albumId", async (req, res) => {
+  const albumId = normalizeId(req.params.albumId);
+  if (!albumId) return res.status(400).json({ ok: false, error: "INVALID_ALBUM", message: "Invalid album id." });
+
+  const db = await readPhotoDb();
+  const photos = db.photos.filter((photo) => photo.albumId === albumId);
+  for (const photo of photos) await deletePhotoObjects(photo);
+  db.photos = db.photos.filter((photo) => photo.albumId !== albumId);
+  db.albums = db.albums.filter((album) => album.id !== albumId);
+  await writePhotoDb(db);
+  res.json({ ok: true, deletedAlbumId: albumId, deletedPhotos: photos.length });
+});
+
+app.delete("/api/photo-cloud/albums/:albumId/photos/:photoId", async (req, res) => {
+  const albumId = normalizeId(req.params.albumId);
+  const photoId = normalizeId(req.params.photoId);
+  if (!albumId || !photoId) return res.status(400).json({ ok: false, error: "INVALID_PHOTO", message: "Invalid photo id." });
+
+  const db = await readPhotoDb();
+  const photo = db.photos.find((item) => item.albumId === albumId && item.id === photoId);
+  if (photo) await deletePhotoObjects(photo);
+  db.photos = db.photos.filter((item) => !(item.albumId === albumId && item.id === photoId));
+  const album = db.albums.find((item) => item.id === albumId);
+  if (album) album.updatedAt = new Date().toISOString();
+  await writePhotoDb(db);
+  res.json({ ok: true, deletedPhotoId: photoId, found: Boolean(photo) });
+});
+
 app.post("/api/photo-cloud/albums/:albumId/photos", photoUpload.single("file"), async (req, res) => {
   try {
     const albumId = normalizeId(req.params.albumId);
@@ -124,26 +154,17 @@ app.post("/api/photo-cloud/albums/:albumId/photos", photoUpload.single("file"), 
 
     const now = new Date().toISOString();
     const photoId = normalizeId(req.body.photoId) || crypto.randomUUID();
-    const displayBuffer = await sharp(req.file.buffer, { limitInputPixels: false })
-      .resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 86, mozjpeg: true })
-      .toBuffer();
-    const thumbBuffer = await sharp(displayBuffer, { limitInputPixels: false })
-      .resize({ width: 480, height: 480, fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 78, mozjpeg: true })
-      .toBuffer();
+    const displayBuffer = await compressPhotoForWeb(req.file.buffer);
 
     const displayName = `${photoId}.jpg`;
-    const thumbName = `${photoId}_thumb.jpg`;
     const storageKey = `albums/${albumId}/${displayName}`;
-    const thumbnailKey = `albums/${albumId}/${thumbName}`;
     const storedDisplay = await savePhotoObject(storageKey, displayBuffer, "image/jpeg");
-    const storedThumb = await savePhotoObject(thumbnailKey, thumbBuffer, "image/jpeg");
 
     const metadata = safeJson(req.body.metadata, {});
     const dimensions = await sharp(displayBuffer).metadata();
     const db = await readPhotoDb();
     const existingIndex = db.photos.findIndex((photo) => photo.id === photoId);
+    if (existingIndex >= 0) await deletePhotoObjects(db.photos[existingIndex]);
     const record = {
       id: photoId,
       albumId,
@@ -151,9 +172,7 @@ app.post("/api/photo-cloud/albums/:albumId/photos", photoUpload.single("file"), 
       outputName: String(req.body.outputName || displayName).slice(0, 180),
       storageProvider: activeStorageProvider,
       storageKey,
-      thumbnailKey,
       url: storedDisplay.url,
-      thumbnailUrl: storedThumb.url,
       width: dimensions.width,
       height: dimensions.height,
       sizeBytes: displayBuffer.length,
@@ -199,6 +218,28 @@ async function convertHeicBuffer(inputBuffer) {
   }
 }
 
+async function compressPhotoForWeb(inputBuffer) {
+  let source = sharp(inputBuffer, { limitInputPixels: false }).rotate();
+  const sourceMeta = await source.metadata();
+  let maxEdge = Math.min(webPhotoMaxEdge, Math.max(sourceMeta.width || webPhotoMaxEdge, sourceMeta.height || webPhotoMaxEdge));
+  let lastBuffer = null;
+
+  for (let edgeAttempt = 0; edgeAttempt < 7; edgeAttempt += 1) {
+    for (const quality of [86, 82, 78, 74, 70, 66, 62, 58, 54]) {
+      const buffer = await sharp(inputBuffer, { limitInputPixels: false })
+        .rotate()
+        .resize({ width: maxEdge, height: maxEdge, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality, mozjpeg: true })
+        .toBuffer();
+      lastBuffer = buffer;
+      if (buffer.length <= webPhotoMaxBytes) return buffer;
+    }
+    maxEdge = Math.max(900, Math.round(maxEdge * 0.84));
+  }
+
+  return lastBuffer;
+}
+
 function createR2Client() {
   if (storageProvider !== "r2") return null;
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -237,6 +278,20 @@ async function savePhotoObject(key, buffer, contentType) {
     key,
     url: `/media/photo-cloud/${key}`,
   };
+}
+
+async function deletePhotoObjects(photo) {
+  const keys = [...new Set([photo?.storageKey, photo?.thumbnailKey].filter(Boolean))];
+  for (const key of keys) await deletePhotoObject(key);
+}
+
+async function deletePhotoObject(key) {
+  if (!key) return;
+  if (activeStorageProvider === "r2") {
+    await r2Client.send(new DeleteObjectCommand({ Bucket: r2Bucket, Key: key }));
+    return;
+  }
+  await fs.rm(path.join(photoStorageRoot, key), { force: true });
 }
 
 async function readPhotoDb() {
