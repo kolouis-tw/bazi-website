@@ -670,10 +670,21 @@ async function deleteSelectedPhotos() {
 async function downloadSelected() {
   const selected = state.detailPhotos.filter((photo) => state.selectedPhotoIds.has(photo.id));
   if (!selected.length) return alert("請先選取照片");
+  setCloudStatus("準備下載照片中...");
   const zip = new JSZip();
+  const failed = [];
   for (const photo of selected) {
-    const blob = photo.blob || await fetchCloudBlob(photo.cloudUrl);
-    if (blob) zip.file(photo.outputName, blob);
+    try {
+      const blob = photo.blob || await fetchCloudBlob(photo);
+      if (blob) zip.file(photo.outputName, blob);
+    } catch (error) {
+      console.warn(error);
+      failed.push(photo.originalName);
+    }
+  }
+  if (!Object.keys(zip.files).length) {
+    setCloudStatus(`下載失敗：雲端檔案不存在或尚未重新同步。${failed.slice(0, 2).join("、")}`);
+    return;
   }
   const blob = await zip.generateAsync({ type: "blob" });
   const link = document.createElement("a");
@@ -681,15 +692,13 @@ async function downloadSelected() {
   link.download = "louis_gallery.zip";
   link.click();
   URL.revokeObjectURL(link.href);
+  setCloudStatus(failed.length ? `已下載部分照片，${failed.length} 張雲端檔案不存在。` : "已建立下載檔。");
 }
 
 async function syncCurrentAlbumToCloud() {
   if (!state.detailAlbumId || !state.detailPhotos.length) return;
   const album = state.albums.find((item) => item.id === state.detailAlbumId);
-  const uploadablePhotos = state.detailPhotos.filter((photo) => (
-    photo.blob &&
-    (!photo.cloudSyncedAt || photo.thumbnailUrl || (photo.cloudSizeBytes || photo.processedSizeBytes || 0) > WEB_PHOTO_MAX_BYTES)
-  ));
+  const uploadablePhotos = state.detailPhotos.filter((photo) => photo.blob);
   setCloudStatus("建立雲端相簿中...");
   try {
     const albumResponse = await fetchCloud("/api/photo-cloud/albums", {
@@ -726,6 +735,7 @@ async function syncCurrentAlbumToCloud() {
         }
         const result = await response.json();
         photo.cloudUrl = result.photo?.url || "";
+        photo.cloudStorageKey = result.photo?.storageKey || "";
         photo.thumbnailUrl = "";
         photo.cloudSizeBytes = result.photo?.sizeBytes || photo.blob.size;
         photo.cloudSyncedAt = new Date().toISOString();
@@ -834,6 +844,7 @@ async function mergeCloudPhoto(cloudPhoto) {
     originalSizeBytes: existing?.originalSizeBytes || 0,
     processedSizeBytes: existing?.processedSizeBytes || cloudPhoto.sizeBytes || 0,
     cloudUrl: cloudPhoto.url || existing?.cloudUrl || "",
+    cloudStorageKey: cloudPhoto.storageKey || existing?.cloudStorageKey || "",
     thumbnailUrl: "",
     cloudSizeBytes: cloudPhoto.sizeBytes || existing?.cloudSizeBytes || 0,
     cloudWidth: cloudPhoto.width || existing?.cloudWidth || 0,
@@ -851,9 +862,14 @@ async function cloudResponseError(response, fallback) {
   return error?.message || fallback;
 }
 
-async function fetchCloudBlob(url) {
+async function fetchCloudBlob(photo) {
+  if (!photo) return null;
+  const key = photo.cloudStorageKey || photo.storageKey || "";
+  const url = key
+    ? `/api/photo-cloud/object?key=${encodeURIComponent(key)}&name=${encodeURIComponent(photo.outputName || "photo.jpg")}`
+    : photo.cloudUrl;
   if (!url) return null;
-  const response = await fetch(url);
+  const response = key ? await fetchCloud(url, { cache: "no-store" }) : await fetch(url);
   if (!response.ok) throw new Error("雲端照片下載失敗");
   return response.blob();
 }

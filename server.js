@@ -114,6 +114,22 @@ app.get("/api/photo-cloud/albums/:albumId/photos", async (req, res) => {
   res.json({ ok: true, photos: db.photos.filter((photo) => photo.albumId === albumId) });
 });
 
+app.get("/api/photo-cloud/object", async (req, res) => {
+  try {
+    const key = normalizeObjectKey(req.query.key);
+    if (!key) return res.status(400).json({ ok: false, error: "INVALID_OBJECT", message: "Invalid object key." });
+    const fileName = String(req.query.name || path.basename(key)).replace(/[^\w.\-()\u4e00-\u9fff]/g, "_").slice(0, 180);
+    const object = await readPhotoObject(key);
+    res.setHeader("Content-Type", object.contentType || "image/jpeg");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(fileName)}"`);
+    res.send(object.buffer);
+  } catch (error) {
+    console.error("Photo object download failed:", error.message);
+    res.status(404).json({ ok: false, error: "OBJECT_NOT_FOUND", message: "Photo object not found." });
+  }
+});
+
 app.delete("/api/photo-cloud/albums/:albumId", async (req, res) => {
   const albumId = normalizeId(req.params.albumId);
   if (!albumId) return res.status(400).json({ ok: false, error: "INVALID_ALBUM", message: "Invalid album id." });
@@ -294,6 +310,20 @@ async function deletePhotoObject(key) {
   await fs.rm(path.join(photoStorageRoot, key), { force: true });
 }
 
+async function readPhotoObject(key) {
+  if (activeStorageProvider === "r2") {
+    const response = await r2Client.send(new GetObjectCommand({ Bucket: r2Bucket, Key: key }));
+    return {
+      buffer: await streamToBuffer(response.Body),
+      contentType: response.ContentType || "image/jpeg",
+    };
+  }
+  return {
+    buffer: await fs.readFile(path.join(photoStorageRoot, key)),
+    contentType: "image/jpeg",
+  };
+}
+
 async function readPhotoDb() {
   if (activeStorageProvider === "r2") {
     try {
@@ -346,15 +376,27 @@ async function writePhotoDb(db) {
 
 async function streamToString(stream) {
   if (!stream) return "";
+  return (await streamToBuffer(stream)).toString("utf8");
+}
+
+async function streamToBuffer(stream) {
+  if (!stream) return Buffer.alloc(0);
   const chunks = [];
   for await (const chunk of stream) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
-  return Buffer.concat(chunks).toString("utf8");
+  return Buffer.concat(chunks);
 }
 
 function normalizeId(value) {
   return String(value || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
+}
+
+function normalizeObjectKey(value) {
+  const key = String(value || "").replace(/^\/+/, "");
+  if (!/^albums\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(key)) return "";
+  if (key.includes("..")) return "";
+  return key;
 }
 
 function safeJson(value, fallback) {
