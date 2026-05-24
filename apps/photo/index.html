@@ -1,20 +1,118 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>攝影集｜Louisko</title>
-<style>
-:root{--bg:#f4f1ea;--ink:#272520;--muted:#777168;--line:rgba(39,37,32,.16);--panel:#fbfaf6;--accent:#8b2f23}
-*{box-sizing:border-box}
-body{margin:0;color:var(--ink);background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.7}
-a{color:inherit}.shell{max-width:980px;margin:0 auto;padding:28px 20px 64px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:42px}.brand{font-weight:900;text-decoration:none}.back{border:1px solid var(--line);background:white;border-radius:999px;padding:10px 16px;text-decoration:none;font-weight:800}.hero{padding:34px 0 28px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.14em}h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:48px;line-height:1.08;margin:10px 0 14px;letter-spacing:0}.lead{color:var(--muted);font-size:18px;margin:0;max-width:720px}.content{margin-top:30px;border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:24px}@media(max-width:620px){.top{align-items:flex-start;flex-direction:column}h1{font-size:34px}.back{width:100%;text-align:center}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Louis Image Processor｜Louisko</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-<main class="shell">
-  <nav class="top"><a class="brand" href="../../index.html">Louisko</a><a class="back" href="../../index.html">回首頁</a></nav>
-  <section class="hero"><h1>攝影集</h1></section>
-</main>
+  <header class="app-header">
+    <a class="brand-link" href="../../index.html" aria-label="回 Louisko 首頁">
+      <img id="brandLogo" alt="Louis" />
+    </a>
+    <div>
+      <p class="eyebrow">LOUIS IMAGE PROCESSOR</p>
+      <h1>Photo Processor</h1>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="toolbar">
+      <button class="tab-button is-active" data-view="upload"><i class="fa-solid fa-cloud-arrow-up"></i><span>上傳</span></button>
+      <button class="tab-button" data-view="albums"><i class="fa-solid fa-images"></i><span>相簿</span></button>
+      <button id="cloudPullButton" class="tab-button" type="button"><i class="fa-solid fa-cloud-arrow-down"></i><span>讀取雲端</span></button>
+      <a class="home-button" href="../../index.html" title="回首頁"><i class="fa-solid fa-house"></i></a>
+    </section>
+
+    <section id="uploadView" class="view is-active">
+      <div class="upload-layout">
+        <section class="panel upload-panel">
+          <div class="panel-head">
+            <div>
+              <p class="label">目前相簿</p>
+              <select id="albumSelect"></select>
+            </div>
+            <button id="newAlbumButton" class="icon-button" title="建立相簿"><i class="fa-solid fa-plus"></i></button>
+          </div>
+
+          <label class="drop-zone" for="fileInput">
+            <i class="fa-solid fa-file-arrow-up"></i>
+            <strong>選擇或拖曳照片</strong>
+            <span>點擊選檔，或把照片拖到這裡。JPG / PNG / WEBP 於瀏覽器處理，HEIC 會送至後端轉成 JPG。</span>
+          </label>
+          <div class="mobile-pickers">
+            <label class="picker-button" for="fileInput"><i class="fa-solid fa-images"></i><span>照片圖庫</span></label>
+            <label class="picker-button" for="cameraInput"><i class="fa-solid fa-camera"></i><span>直接拍照</span></label>
+          </div>
+          <input id="fileInput" type="file" accept="image/*,.heic,.heif,image/heic,image/heif" multiple />
+          <input id="cameraInput" type="file" accept="image/*,.heic,.heif,image/heic,image/heif" capture="environment" />
+
+          <div class="status-row">
+            <progress id="progressBar" max="100" value="0"></progress>
+            <span id="statusText">準備就緒</span>
+          </div>
+          <div id="errorList" class="error-list" hidden></div>
+        </section>
+
+        <aside class="panel info-panel">
+          <p class="label">本地資料庫</p>
+          <p>未同步前，相簿與照片只儲存在目前瀏覽器 IndexedDB。按「同步雲端」後，網頁版大圖與縮圖會保存到雲端相簿，可在其他裝置按「讀取雲端」載入。</p>
+          <p class="muted">一般 HEIC 會自動轉 JPG；少數 ProRAW、HDR、Live Photo 衍生格式可能仍需先手動匯出 JPEG。</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="albumsView" class="view">
+      <div class="section-head">
+        <div>
+          <p class="label">Albums</p>
+          <h2>相簿列表</h2>
+        </div>
+        <button class="secondary-button" data-view-jump="upload"><i class="fa-solid fa-arrow-left"></i><span>回到上傳頁面</span></button>
+      </div>
+      <div id="albumGrid" class="album-grid"></div>
+    </section>
+
+    <section id="detailView" class="view">
+      <div class="section-head">
+        <div>
+          <p class="label">Album</p>
+          <h2 id="detailTitle">相簿</h2>
+        </div>
+        <button class="secondary-button" data-view-jump="upload"><i class="fa-solid fa-arrow-left"></i><span>回到上傳頁面</span></button>
+      </div>
+
+      <div class="album-actions">
+        <button id="selectAllButton"><i class="fa-solid fa-check-double"></i><span>全選</span></button>
+        <button id="clearSelectButton"><i class="fa-regular fa-square"></i><span>取消全選</span></button>
+        <button id="rotateLeftButton"><i class="fa-solid fa-rotate-left"></i><span>向左旋轉</span></button>
+        <button id="rotateRightButton"><i class="fa-solid fa-rotate-right"></i><span>向右旋轉</span></button>
+        <button id="resetButton"><i class="fa-solid fa-rotate"></i><span>重設</span></button>
+        <button id="deletePhotosButton" class="danger"><i class="fa-solid fa-trash"></i><span>刪除選取</span></button>
+        <button id="downloadButton"><i class="fa-solid fa-file-zipper"></i><span>下載選取</span></button>
+        <button id="cloudSyncButton"><i class="fa-solid fa-cloud-arrow-up"></i><span>同步雲端</span></button>
+        <button id="cloudRefreshButton"><i class="fa-solid fa-cloud-arrow-down"></i><span>讀取雲端</span></button>
+      </div>
+      <div id="cloudStatus" class="cloud-status" hidden></div>
+
+      <div id="photoGrid" class="photo-grid"></div>
+    </section>
+  </main>
+
+  <div id="lightbox" class="lightbox" aria-hidden="true">
+    <button id="closeLightbox" class="lightbox-close" title="關閉"><i class="fa-solid fa-xmark"></i></button>
+    <button id="prevPhoto" class="lightbox-nav prev" title="上一張"><i class="fa-solid fa-chevron-left"></i></button>
+    <img id="lightboxImage" alt="" />
+    <button id="nextPhoto" class="lightbox-nav next" title="下一張"><i class="fa-solid fa-chevron-right"></i></button>
+    <p id="lightboxCaption"></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="./assets/louis-logo-data.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>

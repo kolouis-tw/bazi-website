@@ -36,6 +36,28 @@
       padding: 32px 0 28px;
     }
 
+    .page-top {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 18px;
+    }
+
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 148px;
+      height: 52px;
+      padding: 0 18px;
+      border: 2px solid rgba(47, 51, 56, 0.18);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
     .form {
       display: grid;
       gap: 28px;
@@ -428,6 +450,14 @@
         padding-top: 24px;
       }
 
+      .page-top {
+        justify-content: stretch;
+      }
+
+      .home-link {
+        width: 100%;
+      }
+
       .form {
         gap: 28px;
       }
@@ -538,6 +568,9 @@
 </head>
 <body>
   <main>
+    <div class="page-top">
+      <a class="home-link" href="../../index.html">回首頁</a>
+    </div>
     <form class="form" id="birth-form">
       <div class="row">
         <div class="label">陽曆生日：</div>

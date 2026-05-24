@@ -1,60 +1,119 @@
-# Louisko Website
+# louisko.com 未來開發專案
 
-這是 `louisko.com` 的主網站專案。`index.html` 是首頁，`apps/` 內放各個子頁與子專案。
+這個資料夾是 `louisko.com` 未來網站開發的主專案資料夾。根目錄保留可直接開發與部署的網站檔案；內部規劃、規格、參考資料與歷史來源統一放在 `_project/`。
 
-本機整併後位於 `AI_Codex/AI_Web/01_Louisko_Website_目前站台/Louisko_Website`；未來主專案候選位於 `AI_Web/02_louisko.com_未來開發專案/louisko.com_未來開發專案`。
+目前整併位置：`/Users/kolouis/Desktop/AI_Codex/AI_Web/02_louisko.com_未來開發專案/louisko.com_未來開發專案`。這是後續 louisko.com 開發的主專案候選。
 
-## 線上網站
+## 快速入口
 
-- Custom domain: https://louisko.com/
-- 八字排盤正式新路徑: https://louisko.com/apps/bazi/
-- 八字排盤舊相容路徑: https://louisko.com/bazi.html
-- GitHub Pages: https://kolouis-tw.github.io/louisko-website/
-- Zeabur generated domain: https://bazi-ko.zeabur.app/
-- GitHub repository: https://github.com/kolouis-tw/louisko-website
+- 主站首頁：`index.html`
+- 舊八字入口相容頁：`bazi.html`
+- 八字子專案：`apps/bazi/`
+- 攝影照片處理工具：`apps/photo/`
+- 其他預留子頁：`apps/erp/`、`apps/ai/`、`apps/design/`、`apps/photo/`、`apps/docs/`
+- 主站工作流：`scripts/site-workflow/`
+- 小白部署分工手冊：`_project/03_deployment/LOUISKO_DEPLOYMENT_OWNER_MANUAL.md`
+- 八字 TypeScript 引擎：`packages/bazi-engine-ts/`
+- 專案規劃資料：`_project/`
 
-## 專案結構
+## 本機預覽
 
-```text
-index.html
-bazi.html
-apps/
-  bazi/
-    index.html
-    README.md
-    docs_algorithm.md
-    docs_overview.md
-    SMOKE_TEST.md
-    docs/
-    changelog/
-    examples/
-  erp/
-    index.html
-  ai/
-    index.html
-  design/
-    index.html
-  photo/
-    index.html
-  docs/
-    index.html
-scripts/
-  site-workflow/
-Dockerfile
-package.json
-server.js
-README.md
-AGENTS.md
-manifest.json
+```sh
+npm start
 ```
 
-## 路徑規則
+預設 port 是 `8080`，也可指定：
 
-- 主站首頁只放在 `index.html`。
-- 新子頁與子專案放在 `apps/<slug>/index.html`。
-- 八字排盤主檔案是 `apps/bazi/index.html`。
-- 根目錄 `bazi.html` 只作為舊網址相容入口，會導向 `apps/bazi/`。
-- 主站腳本放在 `scripts/site-workflow/`，不要放進單一子專案資料夾。
+```sh
+PORT=3000 npm start
+```
+
+## 攝影照片處理工具
+
+`apps/photo/` 是 Louis Image Processor，提供相簿建立、照片上傳、EXIF 資訊列、Louis Logo 浮水印、相簿內旋轉、刪除、Lightbox 預覽與 ZIP 下載。
+
+HEIC / HEIF 檔案會透過同一個 Node / Express 服務的 `POST /api/convert-heic` 轉成 JPG。後端使用 `multer` memory storage，優先以 `sharp` 轉檔，若 HEIC codec 不完整則 fallback 到 `heic-convert`。單檔上限 50MB，不寫入磁碟，也不永久保存使用者照片。
+
+相簿詳情頁提供「同步雲端」流程。同步時會把已處理照片上傳到後端，後端再轉成網頁適合版本：
+
+- 大圖長邊上限 2048px，JPEG quality 86。
+- 縮圖長邊上限 480px，JPEG quality 78。
+- 本機開發保存位置：`_storage/photo-cloud`。
+
+`_storage/` 已排除在 Git 與 Docker image 外。正式上線使用 Cloudflare R2，不建議依賴 Zeabur container disk 長期保存照片。
+
+Cloudflare R2 可用下列環境變數啟用：
+
+```text
+PHOTO_STORAGE_PROVIDER=r2
+R2_ACCOUNT_ID=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET=...
+R2_PUBLIC_BASE_URL=https://media.louisko.com
+```
+
+實際 key 只放 Zeabur environment variables 或本機 `.env`，不要寫進 repository。
+
+目前部署狀態：
+
+- 既有正式 `https://louisko.com/` 仍綁在 `bazi-website` Zeabur service，該 service 目前是靜態 NGINX 回應。
+- Photo Node 測試 service 已建立：`louisko-node-photo`。
+- 測試頁：`https://louisko-node-photo.zeabur.app/apps/photo/`
+- 測試 API：`https://louisko-node-photo.zeabur.app/api/photo-cloud/albums`
+- R2 bucket：`louisko-photo`。
+- `media.louisko.com` 尚未接 R2，目前先使用 R2 development public URL。
+
+正式切換 `louisko.com` 前，需先確認是否把 custom domain 從既有靜態 service 移到 Node service，或另外設定 `/api/*` routing。
+
+iPhone / iPad 使用時，手機版頁面提供兩個上傳入口：
+
+- 「照片圖庫」：使用 `accept="image/*,.heic,.heif,image/heic,image/heif"` 與 `multiple`，可從 iOS Photos 選取多張照片。
+- 「直接拍照」：使用 `capture="environment"`，可叫出後鏡頭拍照後上傳。
+
+### 資料儲存說明
+
+本工具採用「本地端相簿模式」，並可手動同步到雲端保留區。
+
+所有相簿與已處理照片會先儲存在目前瀏覽器的 IndexedDB 中。未按下「同步雲端」前，照片不會永久上傳至 GitHub、Zeabur 或任何雲端資料庫。
+
+請注意：
+
+- 清除瀏覽器資料會刪除相簿。
+- 不同瀏覽器資料不互通。
+- 不同裝置資料不互通。
+- 建議定期使用 ZIP 下載功能備份照片。
+
+### HEIC 支援說明
+
+一般 iPhone HEIC 會透過 Zeabur 後端自動轉換為 JPG。少數 Apple 特殊格式，例如 ProRAW、HDR、Live Photo 衍生 HEIC，可能仍無法轉換。
+
+若轉換失敗，請在 iPhone 或 Mac 先匯出 JPEG：
+
+- iPhone：設定 → 相機 → 格式 → 最相容
+- iPhone 照片 App：分享 / 儲存為 JPEG
+- Mac 預覽程式：檔案 → 輸出 → JPEG
+
+## 常用工作流
+
+```sh
+npm run site:list
+npm run site:verify
+npm run site -- add-page --slug my-tool --title "我的新工具" --description "我的新工具"
+```
+
+## 專案分工
+
+- 根目錄：主站、部署設定、入口頁與全站工作流。
+- `apps/<slug>/`：各功能頁或子產品。
+- `apps/bazi/`：目前線上八字功能頁。
+- `packages/bazi-engine-ts/`：未來 Web / App / API 可共用的八字核心引擎。
+- `_project/01_roadmap/`：未來開發方向與架構規劃。
+- `_project/02_specs/`：八字頁、流月、神煞、次頁等規格。
+- `_project/03_deployment/`：部署與網域資料。若要理解 GitHub、Zeabur、Cloudflare、R2 的角色，先讀 `_project/03_deployment/LOUISKO_DEPLOYMENT_OWNER_MANUAL.md`。
+- `_project/04_references/`：命理 PDF、舊整理索引、研究資料。
+- `_project/05_archive/`：未來放舊版備份或封存包。
+- `_project/06_assets/`：未來放品牌、圖片、影片與設計素材。
 
 ## 三資料夾連動
 
@@ -66,67 +125,6 @@ manifest.json
 
 若只更新其中一處，需記錄或說明沒有同步其他處的原因。
 
-## 新增子頁
+## 網域說明
 
-優先使用共用腳本：
-
-```sh
-node scripts/site-workflow/manage-site.mjs add-page --slug my-tool --title "我的新工具" --description "我的新工具"
-node scripts/site-workflow/manage-site.mjs verify
-```
-
-若 shell 有載入 npm，也可用：
-
-```sh
-npm run site:list
-npm run site:verify
-npm run site -- add-page --slug my-tool --title "我的新工具" --description "我的新工具"
-```
-
-## 本機預覽
-
-```sh
-npm start
-```
-
-預設 port 是 `8080`，也可用環境變數覆寫：
-
-```sh
-PORT=3000 npm start
-```
-
-## 部署
-
-Zeabur 使用 Dockerfile：
-
-```Dockerfile
-FROM nginx:alpine
-COPY . /usr/share/nginx/html/
-EXPOSE 80
-```
-
-部署目標：
-
-```text
-Project: louisko-website
-Service: louisko-website
-Server: Tencent Tokyo 2C 2GB
-Custom domain: louisko.com
-Public port: HTTP:80
-```
-
-Zeabur token 只保存在本機 Codex 設定檔或安全 secret store，不要寫入 repository、README、AGENTS、commit message 或 chat 回覆。
-
-## 頁面規則
-
-除非使用者明確要求，不要在公開頁面加入提示詞、說明提醒、使用說明、安全提醒或教學文字。必要提醒只寫在 `README.md`、`AGENTS.md` 或其他內部文件。
-
-## 八字子專案
-
-八字排盤的維護文件已移到 `apps/bazi/`。修改排盤、流年、大運、六柱或十神邏輯時，請先閱讀：
-
-- `apps/bazi/README.md`
-- `apps/bazi/docs_algorithm.md`
-- `apps/bazi/docs_overview.md`
-- `apps/bazi/SMOKE_TEST.md`
-- `apps/bazi/docs/regression_cases.md`
+此資料夾以 `louisko.com` 作為未來目標站名。部分歷史文件保留 `Louisko Website`、`louisko.com`、`bazi-website` 等名稱，代表舊專案來源與部署紀錄。
