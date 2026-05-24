@@ -699,15 +699,8 @@ async function syncCurrentAlbumToCloud() {
   if (!state.detailAlbumId || !state.detailPhotos.length) return;
   const album = state.albums.find((item) => item.id === state.detailAlbumId);
   const uploadablePhotos = state.detailPhotos.filter((photo) => photo.blob);
-  setCloudStatus("建立雲端相簿中...");
+  setCloudStatus("準備同步雲端...");
   try {
-    const albumResponse = await fetchCloud("/api/photo-cloud/albums", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: state.detailAlbumId, name: album?.name || "Louis Album" }),
-    });
-    if (!albumResponse.ok) throw new Error(await cloudResponseError(albumResponse, "雲端相簿建立失敗"));
-
     let done = 0;
     if (!uploadablePhotos.length) {
       await pullCloudLibrary({ silent: true });
@@ -721,6 +714,7 @@ async function syncCurrentAlbumToCloud() {
       try {
         const formData = new FormData();
         formData.append("photoId", photo.id);
+        formData.append("albumName", album?.name || "Louis Album");
         formData.append("originalName", photo.originalName);
         formData.append("outputName", photo.outputName);
         formData.append("metadata", JSON.stringify({ exifData: photo.exifData, transformHistory: photo.transformHistory || [] }));
@@ -820,8 +814,11 @@ async function pruneLocalCloudRecords(cloudAlbums, cloudPhotos) {
   for (const album of localAlbums) {
     if (album.cloudSyncedAt && !cloudAlbumIds.has(album.id)) {
       const photos = await getPhotosByAlbum(album.id);
-      for (const photo of photos) await deleteRecord("photos", photo.id);
-      await deleteRecord("albums", album.id);
+      const hasLocalBlob = photos.some((photo) => photo.blob);
+      if (!hasLocalBlob) {
+        for (const photo of photos) await deleteRecord("photos", photo.id);
+        await deleteRecord("albums", album.id);
+      }
     }
   }
 

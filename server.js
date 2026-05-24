@@ -179,6 +179,14 @@ app.post("/api/photo-cloud/albums/:albumId/photos", photoUpload.single("file"), 
     const metadata = safeJson(req.body.metadata, {});
     const dimensions = await sharp(displayBuffer).metadata();
     const db = await readPhotoDb();
+    const albumName = String(req.body.albumName || "Louis Album").trim().slice(0, 80) || "Louis Album";
+    const existingAlbum = db.albums.find((item) => item.id === albumId);
+    if (existingAlbum) {
+      existingAlbum.name = albumName || existingAlbum.name;
+      existingAlbum.updatedAt = now;
+    } else {
+      db.albums.push({ id: albumId, name: albumName, createdAt: now, updatedAt: now });
+    }
     const existingIndex = db.photos.findIndex((photo) => photo.id === photoId);
     if (existingIndex >= 0) await deletePhotoObjects(db.photos[existingIndex]);
     const record = {
@@ -202,8 +210,6 @@ app.post("/api/photo-cloud/albums/:albumId/photos", photoUpload.single("file"), 
     } else {
       db.photos.push(record);
     }
-    const album = db.albums.find((item) => item.id === albumId);
-    if (album) album.updatedAt = now;
     await writePhotoDb(db);
     res.json({ ok: true, photo: record });
   } catch (error) {
