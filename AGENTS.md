@@ -2,11 +2,19 @@
 
 ## 專案性質
 
-本資料夾是 `louisko.com` 主網站專案。首頁、部署設定與主站工作流屬於根目錄；各子頁或子工具放在 `apps/` 內。
+本資料夾是 `louisko.com` 未來主網站專案。首頁、部署設定與主站工作流屬於根目錄；各子頁或子工具放在 `apps/` 內。
 
-本機整併後位於 `AI_Codex/AI_Web/01_Louisko_Website_目前站台/Louisko_Website`；後續若要開發未來主版本，優先查看 `AI_Web/02_louisko.com_未來開發專案/louisko.com_未來開發專案`。
+目前整併位置：`/Users/kolouis/Desktop/AI_Codex/AI_Web/02_louisko.com_未來開發專案/louisko.com_未來開發專案`。這是後續 louisko.com 開發的主專案候選。
+
+部分歷史文件仍會出現 `Louisko Website`、`louisko.com`、`bazi-website` 等名稱，代表舊專案來源或既有部署紀錄。新規劃與新文件優先使用 `louisko.com`。
 
 請以「低干擾、可回溯、主站與子專案分工清楚」為優先。
+
+若使用者詢問 GitHub、Zeabur、Cloudflare、DNS、R2、`media.louisko.com` 或正式切換流程，優先參考：
+
+```text
+_project/03_deployment/LOUISKO_DEPLOYMENT_OWNER_MANUAL.md
+```
 
 ## 重要入口
 
@@ -17,6 +25,7 @@
 - 主站工作流腳本：`scripts/site-workflow/manage-site.mjs`
 - 首頁入口設定：`scripts/site-workflow/site-pages.json`
 - 主站說明：`README.md`
+- 小白部署分工手冊：`_project/03_deployment/LOUISKO_DEPLOYMENT_OWNER_MANUAL.md`
 - 專案資訊：`manifest.json`
 
 ## 部署現況
@@ -25,18 +34,68 @@
 - 八字排盤新路徑: `https://louisko.com/apps/bazi/`
 - 八字排盤舊相容路徑: `https://louisko.com/bazi.html`
 - GitHub Pages: `https://kolouis-tw.github.io/louisko-website/`
-- Zeabur generated domain: `https://bazi-ko.zeabur.app/`
+- 正式 Zeabur service: `louisko-node-photo`
+- 正式 Zeabur service id: `6a118115a458d428a0ab1ee4`
+- 備援舊 Zeabur service: `bazi-website`
+- 備援舊 Zeabur generated domain: `https://bazi-ko.zeabur.app/`
 - GitHub repository: `https://github.com/kolouis-tw/louisko-website`
 
-Zeabur 使用 Dockerfile：
+截至 2026-05-24，`louisko.com` 已從舊 `bazi-website` 靜態 service 移到 `louisko-node-photo` Node service。正式首頁、子頁與 Photo API 現在共用同一個入口；`https://louisko.com/api/photo-cloud/albums` 應回 JSON `200`。
+
+攝影集 / Photo Node service：
+
+- Zeabur service name: `louisko-node-photo`
+- Zeabur service id: `6a118115a458d428a0ab1ee4`
+- Generated domain: `https://louisko-node-photo.zeabur.app/`
+- 正式 Photo page: `https://louisko.com/apps/photo/`
+- 正式 Photo cloud API: `https://louisko.com/api/photo-cloud/albums`
+
+`louisko-node-photo` 已確認用 Docker / Node 執行 `npm start`，`server.js` 監聽 `PORT` / `8080`，並可連 Cloudflare R2。
+
+本專案根目錄 Dockerfile：
 
 ```Dockerfile
-FROM nginx:alpine
-COPY . /usr/share/nginx/html/
-EXPOSE 80
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --omit=dev
+COPY . .
+
+ENV NODE_ENV=production
+EXPOSE 8080
+CMD ["npm", "start"]
 ```
 
 Zeabur token 只應保存在本機 Codex 設定檔或安全 secret store，不要寫入本 repository、README、AGENTS、commit message、issue 或 chat 回覆。
+
+## Cloudflare CLI / R2 操作
+
+本機已可使用 Cloudflare 官方 Wrangler CLI：
+
+```sh
+/opt/homebrew/bin/npx -y wrangler@latest --version
+/opt/homebrew/bin/npx -y wrangler@latest whoami
+/opt/homebrew/bin/npx -y wrangler@latest r2 bucket list
+```
+
+已完成 Wrangler OAuth login，帳號可讀取 Cloudflare account `5208cf5dbbf25b1776f9b45cd796d45d`，並已安裝 Wrangler 的 Codex skills。可用 CLI 查詢 R2：
+
+```sh
+/opt/homebrew/bin/npx -y wrangler@latest r2 bucket info louisko-photo
+/opt/homebrew/bin/npx -y wrangler@latest r2 bucket dev-url get louisko-photo
+/opt/homebrew/bin/npx -y wrangler@latest r2 bucket domain list louisko-photo
+```
+
+目前 `louisko-photo` bucket 的 r2.dev public URL 已啟用，custom domain 尚未連接。若要用 Wrangler 連接 `media.louisko.com`，需先讓 `louisko.com` 成為此 Cloudflare account 底下的 zone，並取得 zone id：
+
+```sh
+/opt/homebrew/bin/npx -y wrangler@latest r2 bucket domain add louisko-photo \
+  --domain media.louisko.com \
+  --zone-id <cloudflare-zone-id>
+```
+
+目前 Codex 環境沒有 Cloudflare MCP connector；優先使用 Wrangler CLI。Cloudflare OAuth token、R2 access key、secret key 不可寫進 repository、README、AGENTS、commit message 或公開回覆。
 
 ## 架構規則
 

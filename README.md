@@ -57,14 +57,14 @@ R2_PUBLIC_BASE_URL=https://media.louisko.com
 
 目前部署狀態：
 
-- 既有正式 `https://louisko.com/` 仍綁在 `bazi-website` Zeabur service，該 service 目前是靜態 NGINX 回應。
-- Photo Node 測試 service 已建立：`louisko-node-photo`。
-- 測試頁：`https://louisko-node-photo.zeabur.app/apps/photo/`
-- 測試 API：`https://louisko-node-photo.zeabur.app/api/photo-cloud/albums`
+- 正式 `https://louisko.com/` 已綁到 Zeabur Node service：`louisko-node-photo`。
+- 正式 Photo 頁：`https://louisko.com/apps/photo/`
+- 正式 Photo API：`https://louisko.com/api/photo-cloud/albums`
+- 備援 generated domain：`https://louisko-node-photo.zeabur.app/`
 - R2 bucket：`louisko-photo`。
 - `media.louisko.com` 尚未接 R2，目前先使用 R2 development public URL。
 
-正式切換 `louisko.com` 前，需先確認是否把 custom domain 從既有靜態 service 移到 Node service，或另外設定 `/api/*` routing。
+截至 2026-05-24，`louisko.com` 已從舊 `bazi-website` 靜態 service 移到 Node service，首頁、子頁與 `/api/*` 共用同一個正式入口。
 
 iPhone / iPad 使用時，手機版頁面提供兩個上傳入口：
 

@@ -93,16 +93,16 @@ Stores：
 - 正式理想目標仍是 `R2_PUBLIC_BASE_URL=https://media.louisko.com`。
 - 本機 Wrangler CLI 已登入 Cloudflare，可用於查詢 R2 bucket、r2.dev URL 與 custom domain 狀態。
 - 已確認 `louisko-photo` 的 r2.dev URL 啟用，且目前沒有 custom domain connected。
-- Zeabur 新 Node 測試 service: `louisko-node-photo`
-- 測試網址: `https://louisko-node-photo.zeabur.app/apps/photo/`
-- 測試 API: `https://louisko-node-photo.zeabur.app/api/photo-cloud/albums`
-- 既有正式 `https://louisko.com/` 仍在 `bazi-website` service；該 service 是靜態 NGINX 回應，Photo API 目前不在正式 domain 上。
-- 正式切換時，需將 `louisko.com` domain 從既有 service 移到 Node service，或建立反向路由讓 `/api/*` 指到 Node service。
-- 在正式 `louisko.com` API 尚未切換前，前端可 fallback 到 `https://louisko-node-photo.zeabur.app` 呼叫 Photo API。
+- Zeabur 正式 Node service: `louisko-node-photo`
+- Generated domain: `https://louisko-node-photo.zeabur.app/apps/photo/`
+- 正式網址: `https://louisko.com/apps/photo/`
+- 正式 API: `https://louisko.com/api/photo-cloud/albums`
+- 截至 2026-05-24，`louisko.com` 已從舊 `bazi-website` 靜態 service 移到 Node service，首頁、Photo 頁與 `/api/*` 共用正式入口。
+- 前端仍保留 `https://louisko-node-photo.zeabur.app` fallback，作為正式 domain 異常時的備援。
 
 已驗證的線上 smoke test：
 
-- `GET /api/photo-cloud/albums` 在 `louisko-node-photo.zeabur.app` 回傳 JSON `200`。
+- `GET https://louisko.com/api/photo-cloud/albums` 回傳 JSON `200`。
 - `POST /api/photo-cloud/albums` 可建立相簿。
 - `POST /api/photo-cloud/albums/:albumId/photos` 可將測試 JPG resize 成長邊 2048px 的網頁版 JPEG 並寫入 R2。
 - R2 公開圖片 URL 回 `200 image/jpeg`。

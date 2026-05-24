@@ -116,21 +116,23 @@ R2_PUBLIC_BASE_URL=https://media.louisko.com
 
 ### 目前線上狀態
 
-截至 2026-05-23：
+截至 2026-05-24：
 
 - R2 bucket 已建立：`louisko-photo`。
 - `media.louisko.com` 尚未接上 R2；目前先使用 Cloudflare R2 development public URL。
-- 新 Zeabur Node 測試 service 已建立：`louisko-node-photo`。
-- 測試頁：`https://louisko-node-photo.zeabur.app/apps/photo/`
-- 測試 API：`https://louisko-node-photo.zeabur.app/api/photo-cloud/albums`
+- 正式 Zeabur Node service：`louisko-node-photo`。
+- 正式頁：`https://louisko.com/apps/photo/`
+- 正式 API：`https://louisko.com/api/photo-cloud/albums`
+- 備援 generated domain：`https://louisko-node-photo.zeabur.app/`
 - 已驗證 API 可建立相簿、上傳測試 JPG、後端 resize 成長邊 2048px JPEG，並存入 R2。
-- 正式 `https://louisko.com/apps/photo/` 仍在既有靜態 service 上；正式切換 domain 前，Photo cloud API 不會在 `louisko.com/api/photo-cloud/albums` 回應。
+- `louisko.com` 已從舊 `bazi-website` 靜態 service 移到 Node service，Photo cloud API 會在 `louisko.com/api/photo-cloud/albums` 回應。
 
-正式切換前請先確認：
+已確認：
 
-1. `louisko-node-photo` 頁面與 API 都正常。
-2. R2 圖片公開 URL 可被瀏覽器讀取。
-3. 使用者確認可將 `louisko.com` domain 從既有靜態 service 移到 Node service，或另建 API routing。
+1. `https://louisko.com/` 首頁回 `200`。
+2. `https://louisko.com/apps/photo/` 回 `200`。
+3. `https://louisko.com/api/photo-cloud/albums` 回 JSON `200`。
+4. R2 圖片公開 URL 可被瀏覽器讀取。
 
 請注意：
 
