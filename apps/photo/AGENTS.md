@@ -106,8 +106,11 @@ Stores：
 - `POST /api/photo-cloud/albums/:albumId/photos` 可將測試 JPG 壓成單一小於 600KB 的網頁版 JPEG 並寫入 R2。
 - `DELETE /api/photo-cloud/albums/:albumId` 會刪 metadata 及相簿內 R2 objects。
 - `DELETE /api/photo-cloud/albums/:albumId/photos/:photoId` 會刪單張 metadata 及 R2 object。
+- `GET /api/photo-cloud/object?key=<storageKey>` 是跨裝置下載用的同網域代理；前端 ZIP 下載應優先走此 API，不要直接 `fetch(r2.dev)`。
 - R2 公開圖片 URL 回 `200 image/jpeg`。
-- 前端需提供「讀取雲端」功能，將雲端相簿與照片 metadata 合併到本機 IndexedDB，使電腦與手機瀏覽器都可看到已同步相簿。
+- 前端需提供「讀取雲端」功能，將雲端相簿與照片 metadata 同步到本機 IndexedDB；若本機相簿曾經同步過但雲端已不存在，需同步刪除本機殘留，避免 ghost 相簿。
+- Cloudflare R2 Dashboard 看到的 `albums/<uuid>/...jpg` 是 object key prefix，不是相簿名稱；相簿名稱只存在 `_metadata/photo-cloud.json`。
+- 目前 ghost `Louis Album` 已從雲端 metadata 刪除；線上健康狀態應為 2 本相簿、12 張照片、`thumbnailRefs=0`。
 
 任何文件中只能記錄 bucket name、public URL、service id 這類非敏感資訊。不可寫入 `R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、Zeabur token 或其他 secret。
 

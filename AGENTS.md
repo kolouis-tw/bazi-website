@@ -49,8 +49,16 @@ _project/03_deployment/LOUISKO_DEPLOYMENT_OWNER_MANUAL.md
 - Generated domain: `https://louisko-node-photo.zeabur.app/`
 - 正式 Photo page: `https://louisko.com/apps/photo/`
 - 正式 Photo cloud API: `https://louisko.com/api/photo-cloud/albums`
+- 正式 Photo object download API: `https://louisko.com/api/photo-cloud/object?key=<storageKey>`
 
 `louisko-node-photo` 已確認用 Docker / Node 執行 `npm start`，`server.js` 監聽 `PORT` / `8080`，並可連 Cloudflare R2。
+
+Photo 線上狀態截至 2026-05-24：
+
+- `https://louisko.com/api/photo-cloud/albums` 回 JSON `200`。
+- R2 metadata 目前應只有 `Phone`、`MacBook` 兩本相簿；ghost `Louis Album` 已刪除。
+- Photo metadata 應為單一成品 JPG 模式：`thumbnailRefs=0`、`missingStorageKeys=0`。
+- 跨裝置下載必須走同網域 `/api/photo-cloud/object`，不要直接從前端 `fetch(r2.dev)` 下載，避免 CORS 與裝置差異。
 
 本專案根目錄 Dockerfile：
 
