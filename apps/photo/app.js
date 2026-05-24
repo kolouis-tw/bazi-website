@@ -800,6 +800,7 @@ async function pullCloudLibrary({ silent = false } = {}) {
     const data = await response.json();
     const albums = Array.isArray(data.albums) ? data.albums : [];
     const photos = Array.isArray(data.photos) ? data.photos : [];
+    await pruneLocalCloudRecords(albums, photos);
     for (const album of albums) await mergeCloudAlbum(album);
     for (const photo of photos) await mergeCloudPhoto(photo);
     return { albums: albums.length, photos: photos.length };
@@ -807,6 +808,27 @@ async function pullCloudLibrary({ silent = false } = {}) {
     if (!silent) throw error;
     console.warn("Cloud library pull skipped:", error.message);
     return { albums: 0, photos: 0 };
+  }
+}
+
+async function pruneLocalCloudRecords(cloudAlbums, cloudPhotos) {
+  const cloudAlbumIds = new Set(cloudAlbums.map((album) => String(album.id || "")).filter(Boolean));
+  const cloudPhotoIds = new Set(cloudPhotos.map((photo) => String(photo.id || "")).filter(Boolean));
+  const localAlbums = await getAll("albums");
+  const localPhotos = await getAll("photos");
+
+  for (const album of localAlbums) {
+    if (album.cloudSyncedAt && !cloudAlbumIds.has(album.id)) {
+      const photos = await getPhotosByAlbum(album.id);
+      for (const photo of photos) await deleteRecord("photos", photo.id);
+      await deleteRecord("albums", album.id);
+    }
+  }
+
+  for (const photo of localPhotos) {
+    if (photo.cloudSyncedAt && !photo.blob && !cloudPhotoIds.has(photo.id)) {
+      await deleteRecord("photos", photo.id);
+    }
   }
 }
 
