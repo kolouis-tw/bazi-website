@@ -6,7 +6,7 @@ const cors = require("cors");
 const multer = require("multer");
 const sharp = require("sharp");
 const heicConvert = require("heic-convert");
-const { S3Client, DeleteObjectCommand, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand } = require("@aws-sdk/client-s3");
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -137,6 +137,7 @@ app.delete("/api/photo-cloud/albums/:albumId", async (req, res) => {
   const db = await readPhotoDb();
   const photos = db.photos.filter((photo) => photo.albumId === albumId);
   for (const photo of photos) await deletePhotoObjects(photo);
+  await deleteAlbumObjects(albumId);
   db.photos = db.photos.filter((photo) => photo.albumId !== albumId);
   db.albums = db.albums.filter((album) => album.id !== albumId);
   await writePhotoDb(db);
@@ -150,7 +151,7 @@ app.delete("/api/photo-cloud/albums/:albumId/photos/:photoId", async (req, res) 
 
   const db = await readPhotoDb();
   const photo = db.photos.find((item) => item.albumId === albumId && item.id === photoId);
-  if (photo) await deletePhotoObjects(photo);
+  await deletePhotoObjects(photo, { albumId, photoId });
   db.photos = db.photos.filter((item) => !(item.albumId === albumId && item.id === photoId));
   const album = db.albums.find((item) => item.id === albumId);
   if (album) album.updatedAt = new Date().toISOString();
@@ -302,8 +303,14 @@ async function savePhotoObject(key, buffer, contentType) {
   };
 }
 
-async function deletePhotoObjects(photo) {
-  const keys = [...new Set([photo?.storageKey, photo?.thumbnailKey].filter(Boolean))];
+async function deletePhotoObjects(photo, fallback = {}) {
+  const keys = new Set([photo?.storageKey, photo?.thumbnailKey].filter(Boolean));
+  const albumId = normalizeId(photo?.albumId || fallback.albumId);
+  const photoId = normalizeId(photo?.id || fallback.photoId);
+  if (albumId && photoId) {
+    keys.add(`albums/${albumId}/${photoId}.jpg`);
+    keys.add(`albums/${albumId}/${photoId}_thumb.jpg`);
+  }
   for (const key of keys) await deletePhotoObject(key);
 }
 
@@ -314,6 +321,30 @@ async function deletePhotoObject(key) {
     return;
   }
   await fs.rm(path.join(photoStorageRoot, key), { force: true });
+}
+
+async function deleteAlbumObjects(albumId) {
+  const safeAlbumId = normalizeId(albumId);
+  if (!safeAlbumId) return;
+  const prefix = `albums/${safeAlbumId}/`;
+
+  if (activeStorageProvider === "r2") {
+    let ContinuationToken;
+    do {
+      const page = await r2Client.send(new ListObjectsV2Command({
+        Bucket: r2Bucket,
+        Prefix: prefix,
+        ContinuationToken,
+      }));
+      for (const object of page.Contents || []) {
+        if (object.Key) await deletePhotoObject(object.Key);
+      }
+      ContinuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (ContinuationToken);
+    return;
+  }
+
+  await fs.rm(path.join(photoStorageRoot, prefix), { recursive: true, force: true });
 }
 
 async function readPhotoObject(key) {

@@ -243,14 +243,22 @@ async function deleteAlbum(albumId) {
   const album = state.albums.find((item) => item.id === albumId);
   if (!album || !confirm(`刪除相簿「${album.name}」與其中照片？`)) return;
   setCloudStatus("刪除雲端相簿中...");
-  await deleteCloudAlbum(albumId);
+  let cloudError = "";
+  try {
+    await deleteCloudAlbum(albumId);
+  } catch (error) {
+    console.warn(error);
+    cloudError = readableError(error);
+  }
   const photos = await getPhotosByAlbum(albumId);
   await Promise.all(photos.map((photo) => deleteRecord("photos", photo.id)));
   await deleteRecord("albums", albumId);
   if (state.currentAlbumId === albumId) state.currentAlbumId = null;
   await ensureDefaultAlbum();
   await refreshAlbums();
-  setCloudStatus("相簿已刪除，雲端檔案也已同步移除。");
+  setCloudStatus(cloudError
+    ? `本機相簿已清除；雲端刪除需重試：${cloudError}`
+    : "相簿已刪除，雲端路徑與檔案也已同步移除。");
 }
 
 async function handleFiles(files) {
@@ -707,12 +715,24 @@ function getActionPhotos() {
 
 async function deleteSelectedPhotos() {
   if (!state.selectedPhotoIds.size || !confirm(`刪除 ${state.selectedPhotoIds.size} 張照片？`)) return;
+  const selectedIds = [...state.selectedPhotoIds];
   setCloudStatus("刪除雲端照片中...");
-  for (const id of state.selectedPhotoIds) await deleteCloudPhoto(state.detailAlbumId, id);
-  await Promise.all([...state.selectedPhotoIds].map((id) => deleteRecord("photos", id)));
+  const failed = [];
+  for (const id of selectedIds) {
+    try {
+      await deleteCloudPhoto(state.detailAlbumId, id);
+    } catch (error) {
+      console.warn(error);
+      failed.push(readableError(error));
+    }
+  }
+  await Promise.all(selectedIds.map((id) => deleteRecord("photos", id)));
+  state.selectedPhotoIds.clear();
   await openAlbum(state.detailAlbumId);
   await refreshAlbums();
-  setCloudStatus("已刪除選取照片，雲端檔案也已同步移除。");
+  setCloudStatus(failed.length
+    ? `本機照片已清除；${failed.length} 筆雲端刪除需重試：${failed[0]}`
+    : "已刪除選取照片，本機與雲端檔案也已同步移除。");
 }
 
 async function downloadSelected() {
@@ -875,11 +895,8 @@ async function pruneLocalCloudRecords(cloudAlbums, cloudPhotos) {
   for (const album of localAlbums) {
     if (album.cloudSyncedAt && !cloudAlbumIds.has(album.id)) {
       const photos = await getPhotosByAlbum(album.id);
-      const hasLocalBlob = photos.some((photo) => photo.blob);
-      if (!hasLocalBlob) {
-        for (const photo of photos) await deleteRecord("photos", photo.id);
-        await deleteRecord("albums", album.id);
-      }
+      for (const photo of photos) await deleteRecord("photos", photo.id);
+      await deleteRecord("albums", album.id);
     }
   }
 
