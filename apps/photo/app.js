@@ -45,6 +45,7 @@ const els = {
   statusText: $("#statusText"),
   errorList: $("#errorList"),
   cloudStatus: $("#cloudStatus"),
+  albumStatus: $("#albumStatus"),
   albumGrid: $("#albumGrid"),
   photoGrid: $("#photoGrid"),
   detailTitle: $("#detailTitle"),
@@ -89,8 +90,8 @@ function bindEvents() {
   $("#deletePhotosButton").addEventListener("click", deleteSelectedPhotos);
   $("#downloadButton").addEventListener("click", downloadSelected);
   $("#cloudSyncButton").addEventListener("click", syncCurrentAlbumToCloud);
-  $("#cloudPullButton").addEventListener("click", () => pullCloudLibraryAndRender());
-  $("#cloudRefreshButton").addEventListener("click", () => pullCloudLibraryAndRender());
+  $("#cloudPullButton").addEventListener("click", () => pullCloudLibraryAndRender({ targetView: "albums" }));
+  $("#cloudRefreshButton").addEventListener("click", () => pullCloudLibraryAndRender({ targetView: "detail" }));
   $("#closeLightbox").addEventListener("click", closeLightbox);
   $("#prevPhoto").addEventListener("click", () => moveLightbox(-1));
   $("#nextPhoto").addEventListener("click", () => moveLightbox(1));
@@ -817,18 +818,31 @@ async function deleteCloudPhoto(albumId, photoId) {
   }
 }
 
-async function pullCloudLibraryAndRender() {
+async function pullCloudLibraryAndRender({ targetView = "current" } = {}) {
+  const shouldShowAlbums = targetView === "albums" || (targetView === "current" && document.querySelector("#albumsView")?.classList.contains("is-active"));
   setCloudStatus("讀取雲端相簿中...");
+  setAlbumStatus("讀取雲端相簿中...");
   try {
     const counts = await pullCloudLibrary({ silent: false });
     await refreshAlbums();
-    if (state.detailAlbumId) await openAlbum(state.detailAlbumId);
-    else renderAlbumGrid();
-    setCloudStatus(`已讀取雲端：${counts.albums} 本相簿、${counts.photos} 張照片。`);
+    if (shouldShowAlbums) {
+      state.detailAlbumId = null;
+      showView("albums");
+      renderAlbumGrid();
+    } else if (state.detailAlbumId) {
+      await openAlbum(state.detailAlbumId);
+    } else {
+      renderAlbumGrid();
+    }
+    const message = `已讀取雲端：${counts.albums} 本相簿、${counts.photos} 張照片。`;
+    setCloudStatus(message);
+    setAlbumStatus(message);
     setStatus("雲端相簿已更新");
   } catch (error) {
     console.warn(error);
-    setCloudStatus(`讀取雲端失敗：${readableError(error)}`);
+    const message = `讀取雲端失敗：${readableError(error)}`;
+    setCloudStatus(message);
+    setAlbumStatus(message);
   }
 }
 
@@ -946,6 +960,17 @@ function setCloudStatus(message) {
   }
   els.cloudStatus.hidden = false;
   els.cloudStatus.textContent = message;
+}
+
+function setAlbumStatus(message) {
+  if (!els.albumStatus) return;
+  if (!message) {
+    els.albumStatus.hidden = true;
+    els.albumStatus.textContent = "";
+    return;
+  }
+  els.albumStatus.hidden = false;
+  els.albumStatus.textContent = message;
 }
 
 async function rotateBlob(blob, degrees) {
