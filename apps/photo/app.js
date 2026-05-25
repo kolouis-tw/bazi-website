@@ -630,9 +630,11 @@ function clearSelection() {
 }
 
 async function rotateSelected(degrees) {
-  const selected = state.detailPhotos.filter((photo) => state.selectedPhotoIds.has(photo.id));
-  if (!selected.length) return setCloudStatus("請先勾選要旋轉的照片。");
+  const selected = getActionPhotos();
+  if (!selected.length) return setCloudStatus("目前相簿沒有可旋轉的照片。");
+  setCloudStatus(`旋轉處理中：0 / ${selected.length}`);
   const failed = [];
+  let done = 0;
   for (const photo of selected) {
     try {
       const sourceBlob = photo.blob || await fetchCloudBlob(photo);
@@ -648,6 +650,9 @@ async function rotateSelected(degrees) {
     } catch (error) {
       console.warn(error);
       failed.push(photo.originalName);
+    } finally {
+      done += 1;
+      setCloudStatus(`旋轉處理中：${done} / ${selected.length}`);
     }
   }
   await openAlbum(state.detailAlbumId);
@@ -657,9 +662,11 @@ async function rotateSelected(degrees) {
 }
 
 async function resetSelected() {
-  const selected = state.detailPhotos.filter((photo) => state.selectedPhotoIds.has(photo.id));
-  if (!selected.length) return setCloudStatus("請先勾選要重設的照片。");
+  const selected = getActionPhotos();
+  if (!selected.length) return setCloudStatus("目前相簿沒有可重設的照片。");
+  setCloudStatus(`重設處理中：0 / ${selected.length}`);
   const failed = [];
+  let done = 0;
   for (const photo of selected) {
     try {
       const sourceBlob = photo.originalBlob || await fetchCloudBlob(photo);
@@ -675,12 +682,20 @@ async function resetSelected() {
     } catch (error) {
       console.warn(error);
       failed.push(photo.originalName);
+    } finally {
+      done += 1;
+      setCloudStatus(`重設處理中：${done} / ${selected.length}`);
     }
   }
   await openAlbum(state.detailAlbumId);
   setCloudStatus(failed.length
     ? `部分照片重設失敗：${failed.slice(0, 2).join("、")}`
     : "已重設選取照片。");
+}
+
+function getActionPhotos() {
+  const selected = state.detailPhotos.filter((photo) => state.selectedPhotoIds.has(photo.id));
+  return selected.length ? selected : state.detailPhotos.slice(0, MAX_SELECTED);
 }
 
 async function deleteSelectedPhotos() {
