@@ -884,7 +884,7 @@ async function pruneLocalCloudRecords(cloudAlbums, cloudPhotos) {
   }
 
   for (const photo of localPhotos) {
-    if (photo.cloudSyncedAt && !photo.blob && !cloudPhotoIds.has(photo.id)) {
+    if (photo.cloudSyncedAt && !cloudPhotoIds.has(photo.id)) {
       await deleteRecord("photos", photo.id);
     }
   }
