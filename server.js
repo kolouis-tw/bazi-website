@@ -190,7 +190,7 @@ app.post("/api/photo-cloud/albums/:albumId/photos", photoUpload.single("file"), 
       db.albums.push({ id: albumId, name: albumName, createdAt: now, updatedAt: now });
     }
     const existingIndex = db.photos.findIndex((photo) => photo.id === photoId);
-    if (existingIndex >= 0) await deletePhotoObjects(db.photos[existingIndex]);
+    if (existingIndex >= 0) await deletePhotoObjects(db.photos[existingIndex], {}, new Set([storageKey]));
     const record = {
       id: photoId,
       albumId,
@@ -304,7 +304,7 @@ async function savePhotoObject(key, buffer, contentType) {
   };
 }
 
-async function deletePhotoObjects(photo, fallback = {}) {
+async function deletePhotoObjects(photo, fallback = {}, keepKeys = new Set()) {
   const keys = new Set([photo?.storageKey, photo?.thumbnailKey].filter(Boolean));
   const albumId = normalizeId(photo?.albumId || fallback.albumId);
   const photoId = normalizeId(photo?.id || fallback.photoId);
@@ -312,7 +312,9 @@ async function deletePhotoObjects(photo, fallback = {}) {
     keys.add(`albums/${albumId}/${photoId}.jpg`);
     keys.add(`albums/${albumId}/${photoId}_thumb.jpg`);
   }
-  for (const key of keys) await deletePhotoObject(key);
+  for (const key of keys) {
+    if (!keepKeys.has(key)) await deletePhotoObject(key);
+  }
 }
 
 async function deletePhotoObject(key) {
