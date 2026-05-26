@@ -4,6 +4,7 @@ const MAX_EDGE = 1800;
 const JPEG_QUALITY = 0.86;
 const WEB_PHOTO_MAX_BYTES = 600 * 1024;
 const MAX_SELECTED = 10;
+const HEIC_CONVERSION_TIMEOUT_MS = 90_000;
 const COPYRIGHT_TEXT = "© Louis Photography | All Rights Reserved";
 const INFO_BAR_MIN_HEIGHT = 118;
 const INFO_BAR_MAX_HEIGHT = 150;
@@ -332,6 +333,7 @@ function isHeic(file) {
 
 async function normalizeUploadFile(file) {
   if (!isHeic(file)) return file;
+  setStatus(`HEIC 轉 JPG 中：${file.name}`);
   const formData = new FormData();
   formData.append("file", file);
   const response = await fetchHeicConversion(formData);
@@ -351,15 +353,22 @@ async function fetchHeicConversion(formData) {
   let lastNetworkError = null;
   let lastResponse = null;
   for (const url of paths) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), HEIC_CONVERSION_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { method: "POST", body: formData });
+      const response = await fetch(url, { method: "POST", body: formData, signal: controller.signal });
       if (shouldTryNextApi(response)) {
         lastResponse = response;
         continue;
       }
       return response;
     } catch (error) {
+      if (error?.name === "AbortError") {
+        throw new Error("HEIC 轉檔逾時。這張可能是 ProRAW、HDR、Live Photo 衍生格式，請先從 iPhone 匯出 JPEG 後再上傳。");
+      }
       lastNetworkError = error;
+    } finally {
+      clearTimeout(timer);
     }
   }
   if (lastResponse) return lastResponse;
