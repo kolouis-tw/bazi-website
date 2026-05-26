@@ -761,7 +761,9 @@ async function downloadSelected() {
   const failed = [];
   for (const photo of selected) {
     try {
-      const blob = photo.blob || await fetchCloudBlob(photo);
+      const blob = photo.cloudSyncedAt && photo.cloudStorageKey
+        ? await fetchCloudBlob(photo)
+        : photo.blob || await fetchCloudBlob(photo);
       if (blob) zip.file(photo.outputName, blob);
     } catch (error) {
       console.warn(error);
@@ -944,6 +946,10 @@ async function mergeCloudPhoto(cloudPhoto) {
   const albumId = String(cloudPhoto.albumId || "");
   if (!id || !albumId) return;
   const existing = await getRecord("photos", id);
+  const existingSyncedAt = Date.parse(existing?.cloudSyncedAt || "");
+  const cloudUpdatedAt = Date.parse(cloudPhoto.updatedAt || "");
+  const cloudIsNewer = Boolean(cloudUpdatedAt) && (!existingSyncedAt || cloudUpdatedAt > existingSyncedAt);
+  const keepLocalBlob = Boolean(existing?.blob) && !existing?.cloudSyncedAt && !cloudIsNewer;
   await putRecord("photos", {
     ...(existing || {}),
     id,
@@ -952,10 +958,10 @@ async function mergeCloudPhoto(cloudPhoto) {
     outputName: cloudPhoto.outputName || existing?.outputName || `${id}.jpg`,
     createdAt: existing?.createdAt || cloudPhoto.createdAt || new Date().toISOString(),
     updatedAt: cloudPhoto.updatedAt || existing?.updatedAt || new Date().toISOString(),
-    exifData: existing?.exifData || cloudPhoto.metadata?.exifData || {},
-    transformHistory: existing?.transformHistory || cloudPhoto.metadata?.transformHistory || [],
-    blob: existing?.blob,
-    originalBlob: existing?.originalBlob,
+    exifData: cloudPhoto.metadata?.exifData || existing?.exifData || {},
+    transformHistory: cloudPhoto.metadata?.transformHistory || existing?.transformHistory || [],
+    blob: keepLocalBlob ? existing?.blob : undefined,
+    originalBlob: keepLocalBlob ? existing?.originalBlob : undefined,
     originalSizeBytes: existing?.originalSizeBytes || 0,
     processedSizeBytes: existing?.processedSizeBytes || cloudPhoto.sizeBytes || 0,
     cloudUrl: cloudPhoto.url || existing?.cloudUrl || "",
@@ -965,7 +971,7 @@ async function mergeCloudPhoto(cloudPhoto) {
     cloudWidth: cloudPhoto.width || existing?.cloudWidth || 0,
     cloudHeight: cloudPhoto.height || existing?.cloudHeight || 0,
     cloudSyncedAt: cloudPhoto.updatedAt || new Date().toISOString(),
-    cloudOnly: !existing?.blob,
+    cloudOnly: !keepLocalBlob,
   });
 }
 
@@ -1056,7 +1062,8 @@ function photoImageSrc(photo, size = "thumb") {
 function cloudObjectUrl(photo) {
   const key = photo?.cloudStorageKey || photo?.storageKey || "";
   if (!key) return "";
-  const path = `/api/photo-cloud/object?key=${encodeURIComponent(key)}&name=${encodeURIComponent(photo.outputName || "photo.jpg")}`;
+  const version = encodeURIComponent(photo.cloudSyncedAt || photo.updatedAt || photo.cloudSizeBytes || "");
+  const path = `/api/photo-cloud/object?key=${encodeURIComponent(key)}&name=${encodeURIComponent(photo.outputName || "photo.jpg")}${version ? `&v=${version}` : ""}`;
   if (location.protocol === "file:") return `https://louisko.com${path}`;
   return path;
 }
