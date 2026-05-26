@@ -87,6 +87,8 @@
         <button id="resetButton"><i class="fa-solid fa-rotate"></i><span>重設</span></button>
         <button id="deletePhotosButton" class="danger"><i class="fa-solid fa-trash"></i><span>刪除選取</span></button>
         <button id="downloadButton"><i class="fa-solid fa-file-zipper"></i><span>下載選取</span></button>
+        <button id="slideshowButton"><i class="fa-solid fa-circle-play"></i><span>連續播放</span></button>
+        <button id="shareButton"><i class="fa-solid fa-share-nodes"></i><span>分享照片</span></button>
         <button id="cloudSyncButton"><i class="fa-solid fa-cloud-arrow-up"></i><span>同步雲端</span></button>
         <button id="cloudRefreshButton"><i class="fa-solid fa-cloud-arrow-down"></i><span>讀取雲端</span></button>
       </div>
@@ -98,6 +100,7 @@
 
   <div id="lightbox" class="lightbox" aria-hidden="true">
     <button id="closeLightbox" class="lightbox-close" title="關閉"><i class="fa-solid fa-xmark"></i></button>
+    <button id="stopSlideshow" class="lightbox-stop" title="停止連續播放" hidden><i class="fa-solid fa-pause"></i></button>
     <button id="prevPhoto" class="lightbox-nav prev" title="上一張"><i class="fa-solid fa-chevron-left"></i></button>
     <img id="lightboxImage" alt="" />
     <button id="nextPhoto" class="lightbox-nav next" title="下一張"><i class="fa-solid fa-chevron-right"></i></button>

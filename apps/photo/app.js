@@ -3,8 +3,8 @@ const DB_VERSION = 1;
 const MAX_EDGE = 1800;
 const JPEG_QUALITY = 0.86;
 const WEB_PHOTO_MAX_BYTES = 600 * 1024;
-const MAX_SELECTED = 10;
 const HEIC_CONVERSION_TIMEOUT_MS = 90_000;
+const SLIDESHOW_INTERVAL_MS = 3200;
 const COPYRIGHT_TEXT = "© Louis Photography | All Rights Reserved";
 const INFO_BAR_MIN_HEIGHT = 118;
 const INFO_BAR_MAX_HEIGHT = 150;
@@ -32,6 +32,8 @@ const state = {
   detailPhotos: [],
   selectedPhotoIds: new Set(),
   lightboxIndex: 0,
+  lightboxPhotos: [],
+  slideshowTimer: null,
   logo: null,
 };
 
@@ -54,6 +56,7 @@ const els = {
   lightbox: $("#lightbox"),
   lightboxImage: $("#lightboxImage"),
   lightboxCaption: $("#lightboxCaption"),
+  stopSlideshow: $("#stopSlideshow"),
 };
 
 document.addEventListener("DOMContentLoaded", init);
@@ -91,10 +94,13 @@ function bindEvents() {
   $("#resetButton").addEventListener("click", resetSelected);
   $("#deletePhotosButton").addEventListener("click", deleteSelectedPhotos);
   $("#downloadButton").addEventListener("click", downloadSelected);
+  $("#slideshowButton").addEventListener("click", startSlideshow);
+  $("#shareButton").addEventListener("click", shareSelectedPhotos);
   $("#cloudSyncButton").addEventListener("click", syncCurrentAlbumToCloud);
   $("#cloudPullButton").addEventListener("click", () => pullCloudLibraryAndRender({ targetView: "albums" }));
   $("#cloudRefreshButton").addEventListener("click", () => pullCloudLibraryAndRender({ targetView: "detail" }));
   $("#closeLightbox").addEventListener("click", closeLightbox);
+  $("#stopSlideshow").addEventListener("click", stopSlideshow);
   $("#prevPhoto").addEventListener("click", () => moveLightbox(-1));
   $("#nextPhoto").addEventListener("click", () => moveLightbox(1));
   document.addEventListener("keydown", handleKeys);
@@ -643,17 +649,12 @@ function renderPhotoGrid() {
 }
 
 function updateSelection(input) {
-  if (input.checked && state.selectedPhotoIds.size >= MAX_SELECTED) {
-    input.checked = false;
-    alert(`最多勾選 ${MAX_SELECTED} 張`);
-    return;
-  }
   if (input.checked) state.selectedPhotoIds.add(input.value);
   else state.selectedPhotoIds.delete(input.value);
 }
 
 function selectVisiblePhotos() {
-  state.selectedPhotoIds = new Set(state.detailPhotos.slice(0, MAX_SELECTED).map((photo) => photo.id));
+  state.selectedPhotoIds = new Set(state.detailPhotos.map((photo) => photo.id));
   renderPhotoGrid();
 }
 
@@ -728,7 +729,7 @@ async function resetSelected() {
 
 function getActionPhotos() {
   const selected = state.detailPhotos.filter((photo) => state.selectedPhotoIds.has(photo.id));
-  return selected.length ? selected : state.detailPhotos.slice(0, MAX_SELECTED);
+  return selected.length ? selected : state.detailPhotos;
 }
 
 async function deleteSelectedPhotos() {
@@ -754,26 +755,10 @@ async function deleteSelectedPhotos() {
 }
 
 async function downloadSelected() {
-  const selected = state.detailPhotos.filter((photo) => state.selectedPhotoIds.has(photo.id));
-  if (!selected.length) return alert("請先選取照片");
+  const selected = getActionPhotos();
+  if (!selected.length) return alert("目前相簿沒有可下載的照片");
   setCloudStatus("準備下載照片中...");
-  const zip = new JSZip();
-  const failed = [];
-  for (const photo of selected) {
-    try {
-      const blob = photo.cloudSyncedAt && photo.cloudStorageKey
-        ? await fetchCloudBlob(photo)
-        : photo.blob || await fetchCloudBlob(photo);
-      if (blob) zip.file(photo.outputName, blob);
-    } catch (error) {
-      console.warn(error);
-      failed.push(photo.originalName);
-    }
-  }
-  if (!Object.keys(zip.files).length) {
-    setCloudStatus(`下載失敗：雲端檔案不存在或尚未重新同步。${failed.slice(0, 2).join("、")}`);
-    return;
-  }
+  const { zip, failed } = await buildPhotoZip(selected);
   const blob = await zip.generateAsync({ type: "blob" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -781,6 +766,87 @@ async function downloadSelected() {
   link.click();
   URL.revokeObjectURL(link.href);
   setCloudStatus(failed.length ? `已下載部分照片，${failed.length} 張雲端檔案不存在。` : "已建立下載檔。");
+}
+
+async function shareSelectedPhotos() {
+  const selected = getActionPhotos();
+  if (!selected.length) return alert("目前相簿沒有可分享的照片");
+  setCloudStatus(`準備分享 ${selected.length} 張照片中...`);
+  const { files, failed } = await buildShareFiles(selected);
+  const title = shareTitle();
+  try {
+    if (files.length && navigator.canShare?.({ files })) {
+      await navigator.share({ title, text: `${title}｜${files.length} 張照片`, files });
+      setCloudStatus(failed.length ? `已分享部分照片，${failed.length} 張無法讀取。` : "已開啟分享。");
+      return;
+    }
+    const { zip } = await buildPhotoZip(selected);
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const zipFile = new File([zipBlob], "louis_gallery.zip", { type: "application/zip" });
+    if (navigator.canShare?.({ files: [zipFile] })) {
+      await navigator.share({ title, text: title, files: [zipFile] });
+      setCloudStatus("已開啟分享壓縮檔。");
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({ title, text: `${title}\n${location.href}` });
+      setCloudStatus("已開啟分享連結；此瀏覽器不支援直接分享多張照片。");
+      return;
+    }
+    await downloadSelected();
+    setCloudStatus("此瀏覽器不支援系統分享，已改為下載照片。");
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      setCloudStatus("已取消分享。");
+      return;
+    }
+    console.warn(error);
+    setCloudStatus(`分享失敗：${readableError(error)}`);
+  }
+}
+
+async function buildShareFiles(photos) {
+  const files = [];
+  const failed = [];
+  for (const photo of photos) {
+    try {
+      const blob = await bestPhotoBlob(photo);
+      if (blob) files.push(new File([blob], photo.outputName || `${photo.id}.jpg`, { type: blob.type || "image/jpeg" }));
+    } catch (error) {
+      console.warn(error);
+      failed.push(photo.originalName);
+    }
+  }
+  return { files, failed };
+}
+
+async function buildPhotoZip(photos) {
+  const zip = new JSZip();
+  const failed = [];
+  for (const photo of photos) {
+    try {
+      const blob = await bestPhotoBlob(photo);
+      if (blob) zip.file(photo.outputName || `${photo.id}.jpg`, blob);
+    } catch (error) {
+      console.warn(error);
+      failed.push(photo.originalName);
+    }
+  }
+  if (!Object.keys(zip.files).length) {
+    throw new Error(`雲端檔案不存在或尚未重新同步。${failed.slice(0, 2).join("、")}`);
+  }
+  return { zip, failed };
+}
+
+async function bestPhotoBlob(photo) {
+  return photo.cloudSyncedAt && photo.cloudStorageKey
+    ? await fetchCloudBlob(photo)
+    : photo.blob || await fetchCloudBlob(photo);
+}
+
+function shareTitle() {
+  const album = state.albums.find((item) => item.id === state.detailAlbumId);
+  return album?.name ? `Louis Photo｜${album.name}` : "Louis Photo";
 }
 
 async function syncCurrentAlbumToCloud() {
@@ -1030,6 +1096,7 @@ async function rotateBlob(blob, degrees) {
 }
 
 function openLightbox(index) {
+  state.lightboxPhotos = state.detailPhotos;
   state.lightboxIndex = index;
   updateLightbox();
   els.lightbox.classList.add("is-open");
@@ -1037,21 +1104,44 @@ function openLightbox(index) {
 }
 
 function closeLightbox() {
+  stopSlideshow();
   els.lightbox.classList.remove("is-open");
   els.lightbox.setAttribute("aria-hidden", "true");
 }
 
 function moveLightbox(step) {
-  if (!state.detailPhotos.length) return;
-  state.lightboxIndex = (state.lightboxIndex + step + state.detailPhotos.length) % state.detailPhotos.length;
+  const photos = state.lightboxPhotos.length ? state.lightboxPhotos : state.detailPhotos;
+  if (!photos.length) return;
+  state.lightboxIndex = (state.lightboxIndex + step + photos.length) % photos.length;
   updateLightbox();
 }
 
 function updateLightbox() {
-  const photo = state.detailPhotos[state.lightboxIndex];
+  const photos = state.lightboxPhotos.length ? state.lightboxPhotos : state.detailPhotos;
+  const photo = photos[state.lightboxIndex];
   if (!photo) return;
   els.lightboxImage.src = photoImageSrc(photo, "full");
-  els.lightboxCaption.textContent = `${state.lightboxIndex + 1} / ${state.detailPhotos.length} · ${photo.originalName}`;
+  els.lightboxCaption.textContent = `${state.lightboxIndex + 1} / ${photos.length} · ${photo.originalName}`;
+}
+
+function startSlideshow() {
+  const photos = getActionPhotos();
+  if (!photos.length) return setCloudStatus("目前相簿沒有可播放的照片。");
+  stopSlideshow();
+  state.lightboxPhotos = photos;
+  state.lightboxIndex = 0;
+  updateLightbox();
+  els.lightbox.classList.add("is-open");
+  els.lightbox.setAttribute("aria-hidden", "false");
+  els.stopSlideshow.hidden = false;
+  state.slideshowTimer = setInterval(() => moveLightbox(1), SLIDESHOW_INTERVAL_MS);
+  setCloudStatus(`連續播放中：${photos.length} 張照片。`);
+}
+
+function stopSlideshow() {
+  if (state.slideshowTimer) clearInterval(state.slideshowTimer);
+  state.slideshowTimer = null;
+  if (els.stopSlideshow) els.stopSlideshow.hidden = true;
 }
 
 function photoImageSrc(photo, size = "thumb") {
