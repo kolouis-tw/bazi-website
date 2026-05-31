@@ -119,7 +119,7 @@ git push origin main
 ZEABUR_TOKEN=$(awk -F 'ZEABUR_TOKEN = ' '/ZEABUR_TOKEN/ {gsub(/[\"{}, ]/,"",$2); print $2; exit}' /Users/kolouis/.codex/config.toml) \
 /opt/homebrew/bin/npx -y zeabur@latest deploy \
   --project-id 6a008755e6a21fff4d962fee \
-  --service-id 6a0088674a961c814e9ee899 \
+  --service-id 6a118115a458d428a0ab1ee4 \
   --environment-id 6a008755e5ed304c1d845a06 \
   --interactive=false \
   --json
