@@ -427,6 +427,7 @@ body > main > .form .secondary-button {
 .icon-button,
 .picker-button,
 .back,
+.back-link,
 .home-link,
 button {
   min-height: var(--louisko-action-height) !important;
@@ -477,6 +478,7 @@ button {
 .icon-button:hover,
 .picker-button:hover,
 .back:hover,
+.back-link:hover,
 .home-link:hover,
 button:hover {
   transform: translateY(-1px);
@@ -491,6 +493,27 @@ button.primary,
   border-color: rgba(184, 125, 108, .38) !important;
   background: rgba(251, 249, 246, .82) !important;
   color: var(--louisko-accent) !important;
+}
+
+.bazi-analysis-page .topbar {
+  align-items: center !important;
+}
+
+.bazi-analysis-page .back-link,
+.bazi-analysis-page #copy-prompt {
+  min-width: 156px !important;
+  min-height: var(--louisko-action-height) !important;
+  padding: 0 var(--louisko-action-pad-x) !important;
+  border-radius: 999px !important;
+  font-size: clamp(16px, 1.15vw, 19px) !important;
+  font-weight: var(--louisko-button-weight) !important;
+  letter-spacing: .03em !important;
+  line-height: 1 !important;
+}
+
+.bazi-analysis-page .back-link {
+  background: rgba(255, 255, 255, .62) !important;
+  color: var(--louisko-ink) !important;
 }
 
 .panel,
